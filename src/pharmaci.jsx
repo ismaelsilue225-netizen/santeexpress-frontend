@@ -155,15 +155,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Illustration */}
-          <div
-            style={{
-              flex: 1,
-              minWidth: "250px",
-              textAlign: "center",
-              fontSize: "180px",
-            }}
-          >
+         
          {/* Illustration */}
 <div
   style={{
