@@ -148,10 +148,14 @@ function SearchingPharmacy({commune,onFound}){
   );
 }
 
+const COMMUNES=["Toutes","Plateau","Cocody","Yopougon","Abobo","Adjamé","Marcory","Treichville","Koumassi","Port-Bouët","Attécoubé","Bingerville","Anyama","Songon"];
+
 function Landing({setMode,setCat,pharmacies}){
   const [q,setQ]=useState("");
+  const [commune,setCommune]=useState("Toutes");
   const go=()=>{setMode("catalog");};
   const gardeList=(pharmacies||[]).filter(p=>p.est_garde||p.garde);
+  const filteredPharma=commune==="Toutes"?(pharmacies||[]):(pharmacies||[]).filter(p=>(p.district||p.commune)===commune);
   return(
     <div style={{paddingBottom:16}}>
       {/* HERO */}
@@ -205,19 +209,67 @@ function Landing({setMode,setCat,pharmacies}){
       {/* PHARMACIES DE GARDE */}
       {gardeList.length>0&&(
         <div style={{padding:"16px 16px 0"}}>
-          <h3 style={{color:TXT,fontWeight:900,margin:"0 0 12px",fontSize:17}}>🏥 Pharmacies de garde</h3>
+          <h3 style={{color:TXT,fontWeight:900,margin:"0 0 12px",fontSize:17}}>🌙 Pharmacies de garde ce soir</h3>
           <div style={{overflowX:"auto",display:"flex",gap:12,scrollbarWidth:"none",paddingBottom:4}}>
             {gardeList.map(ph=>(
-              <div key={ph.id} style={{background:W,borderRadius:16,padding:14,minWidth:180,flexShrink:0,boxShadow:"0 2px 12px rgba(0,0,0,0.08)"}}>
-                <div style={{width:40,height:40,borderRadius:10,background:GBG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,marginBottom:8}}>🏥</div>
-                <p style={{color:TXT,fontWeight:700,fontSize:13,margin:"0 0 3px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ph.nom||ph.name}</p>
-                <p style={{color:TXTS,fontSize:11,margin:"0 0 8px"}}>{ph.district} · ⭐ {ph.note||ph.rating}</p>
-                <span style={{background:GBG,color:GD,fontSize:10,fontWeight:700,padding:"4px 8px",borderRadius:8}}>GARDE ✓</span>
+              <div key={ph.id} style={{background:W,borderRadius:16,padding:14,minWidth:190,flexShrink:0,boxShadow:"0 2px 12px rgba(0,0,0,0.08)",border:`1.5px solid ${GBG}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                  <div style={{width:40,height:40,borderRadius:10,background:GBG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🏥</div>
+                  <span style={{background:"#FFF3E0",color:"#E65100",fontSize:9,fontWeight:800,padding:"3px 7px",borderRadius:6}}>GARDE 24h</span>
+                </div>
+                <p style={{color:TXT,fontWeight:700,fontSize:12,margin:"0 0 2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ph.nom||ph.name}</p>
+                <p style={{color:TXTS,fontSize:11,margin:"0 0 2px"}}>{ph.district}</p>
+                <p style={{color:TXTS,fontSize:10,margin:"0 0 8px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ph.adresse}</p>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{color:G,fontSize:10,fontWeight:700}}>⭐ {ph.note||ph.rating}</span>
+                  {ph.telephone&&<span style={{color:WAVE_C,fontSize:10,fontWeight:600}}>📞 {ph.telephone}</span>}
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
+
+      {/* TOUTES LES PHARMACIES PAR COMMUNE */}
+      <div style={{padding:"20px 16px 0"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <h3 style={{color:TXT,fontWeight:900,margin:0,fontSize:17}}>🏥 Toutes les pharmacies</h3>
+          <span style={{color:TXTS,fontSize:11}}>{filteredPharma.length} pharmacies</span>
+        </div>
+        {/* Filtre communes */}
+        <div style={{overflowX:"auto",display:"flex",gap:7,scrollbarWidth:"none",marginBottom:14,paddingBottom:2}}>
+          {COMMUNES.map(c=>(
+            <button key={c} onClick={()=>setCommune(c)}
+              style={{background:commune===c?G:W,color:commune===c?W:TXT,border:`1.5px solid ${commune===c?G:"#E0E8E3"}`,borderRadius:20,padding:"6px 13px",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",fontSize:11,flexShrink:0}}>
+              {c}
+            </button>
+          ))}
+        </div>
+        {/* Liste pharmacies */}
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {filteredPharma.map(ph=>(
+            <div key={ph.id} style={{background:W,borderRadius:14,padding:14,display:"flex",gap:12,alignItems:"flex-start",boxShadow:"0 2px 8px rgba(0,0,0,0.06)",border:`1px solid ${ph.est_garde?"#FFE0B2":"#F0F4F1"}`}}>
+              <div style={{width:44,height:44,borderRadius:11,background:ph.est_garde?"#FFF3E0":GBG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
+                {ph.est_garde?"🌙":"🏥"}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
+                  <p style={{color:TXT,fontWeight:700,fontSize:13,margin:0,flex:1,lineHeight:1.3}}>{ph.nom}</p>
+                  <span style={{color:ph.est_ouvert?G:RED,fontSize:10,fontWeight:700,flexShrink:0,marginLeft:8}}>
+                    {ph.est_ouvert?"● Ouvert":"● Fermé"}
+                  </span>
+                </div>
+                <p style={{color:TXTS,fontSize:11,margin:"0 0 4px"}}>{ph.district} · {ph.adresse}</p>
+                <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+                  <span style={{color:GD,fontSize:11,fontWeight:600}}>⭐ {ph.note}</span>
+                  {ph.telephone&&<span style={{color:TXTS,fontSize:10}}>📞 {ph.telephone}</span>}
+                  {ph.est_garde&&<span style={{background:"#FFF3E0",color:"#E65100",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:5}}>GARDE</span>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* CATEGORIES */}
       <div style={{padding:"16px 16px 0"}}>
