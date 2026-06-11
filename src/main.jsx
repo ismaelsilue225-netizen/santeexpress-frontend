@@ -1,9 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import SantéExpress from "./pharmaci.jsx"; // ← ton fichier principal
+import App from "./pharmaci.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <SantéExpress />
-  </React.StrictMode>
+  React.createElement(React.StrictMode, null,
+    React.createElement(App)
+  )
 );
