@@ -153,7 +153,7 @@ export default function App() {
                 📱 WhatsApp
               </a>
             </div>
-          </div>
+        
 
          
          {/* Illustration */}
@@ -173,12 +173,15 @@ export default function App() {
     borderRadius: "20px"
   }}
 />
-          <h3>🏥 Pharmacies partenaires</h3>
+
+</div>
+</div>
+<h3>📋 Pharmacies partenaires</h3>
 
           <p>• Pharmacie Saint Jean</p>
           <p>• Pharmacie des Deux Plateaux</p>
           <p>• Pharmacie Cocody Centre</p>
-        </div>
+        
 
         {/* Footer */}
         <div
