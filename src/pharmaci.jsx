@@ -173,15 +173,14 @@ export default function App() {
   }}
 >
   <img
-    src="https://i.imgur.com/4YQZ4dS.png"
-    alt="Pharmacien"
-    style={{
-      width: "550px",
-      maxWidth: "100%",
-      borderRadius: "20px"
-    }}
-  />
-</div>
+  src="/1000494918.png"
+  alt="Pharmacien"
+  style={{
+    width: "550px",
+    maxWidth: "100%",
+    borderRadius: "20px"
+  }}
+/>
           <h3>🏥 Pharmacies partenaires</h3>
 
           <p>• Pharmacie Saint Jean</p>
