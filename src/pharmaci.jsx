@@ -7,7 +7,7 @@ export default function App() {
         SANTÉ<span style={{color:"#C8FFDF"}}>EXPRESS</span>
       </h1>
       <p style={{color:"white",marginTop:16}}>
-        Medicaments livrés chez vous
+        Médicaments livrés chez vous
       </p>
     </div>
   );
