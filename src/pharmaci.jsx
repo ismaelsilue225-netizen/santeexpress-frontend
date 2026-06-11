@@ -68,15 +68,33 @@ export default function App() {
                 marginBottom: "25px",
               }}
             >
-              <span style={{background:"rgba(255,255,255,.15)",padding:"10px 15px",borderRadius:"25px"}}>
+              <span
+                style={{
+                  background: "rgba(255,255,255,.15)",
+                  padding: "10px 15px",
+                  borderRadius: "25px",
+                }}
+              >
                 🌙 Garde 24h/24
               </span>
 
-              <span style={{background:"rgba(255,255,255,.15)",padding:"10px 15px",borderRadius:"25px"}}>
+              <span
+                style={{
+                  background: "rgba(255,255,255,.15)",
+                  padding: "10px 15px",
+                  borderRadius: "25px",
+                }}
+              >
                 🛵 Livraison rapide
               </span>
 
-              <span style={{background:"rgba(255,255,255,.15)",padding:"10px 15px",borderRadius:"25px"}}>
+              <span
+                style={{
+                  background: "rgba(255,255,255,.15)",
+                  padding: "10px 15px",
+                  borderRadius: "25px",
+                }}
+              >
                 💳 Mobile Money
               </span>
             </div>
@@ -153,35 +171,33 @@ export default function App() {
                 📱 WhatsApp
               </a>
             </div>
-        
+          </div>
 
-         
-         {/* Illustration */}
-<div
-  style={{
-    flex: 1,
-    minWidth: "250px",
-    textAlign: "center",
-  }}
->
-  <img
-  src="/1000494918.png"
-  alt="Pharmacien"
-  style={{
-    width: "550px",
-    maxWidth: "100%",
-    borderRadius: "20px"
-  }}
-/>
+          {/* Illustration */}
+          <div
+            style={{
+              flex: 1,
+              minWidth: "250px",
+              textAlign: "center",
+            }}
+          >
+            <img
+              src="/1000494918.png"
+              alt="Pharmacien"
+              style={{
+                width: "550px",
+                maxWidth: "100%",
+                borderRadius: "20px",
+              }}
+            />
+          </div>
+        </div>
 
-</div>
-</div>
-<h3>📋 Pharmacies partenaires</h3>
+        <h3>📋 Pharmacies partenaires</h3>
 
-          <p>• Pharmacie Saint Jean</p>
-          <p>• Pharmacie des Deux Plateaux</p>
-          <p>• Pharmacie Cocody Centre</p>
-        
+        <p>• Pharmacie Saint Jean</p>
+        <p>• Pharmacie des Deux Plateaux</p>
+        <p>• Pharmacie Cocody Centre</p>
 
         {/* Footer */}
         <div
