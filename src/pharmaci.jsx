@@ -158,7 +158,7 @@ const INIT_ORDERS=[
 /* ══════════════════════════════════════════
    COMPOSANT RACINE
 ══════════════════════════════════════════ */
-export default function SantéExpress(){
+export default function App(){
   const [mode,setMode]=useState("landing");
   const [cart,setCart]=useState([]);
   const [product,setProduct]=useState(null);
