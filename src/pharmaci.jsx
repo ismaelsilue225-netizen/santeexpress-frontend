@@ -164,19 +164,24 @@ export default function App() {
               fontSize: "180px",
             }}
           >
-            💊
-          </div>
-        </div>
-
-        {/* Pharmacies */}
-        <div
-          style={{
-            marginTop: "60px",
-            background: "rgba(255,255,255,0.1)",
-            padding: "25px",
-            borderRadius: "20px",
-          }}
-        >
+         {/* Illustration */}
+<div
+  style={{
+    flex: 1,
+    minWidth: "250px",
+    textAlign: "center",
+  }}
+>
+  <img
+    src="https://i.imgur.com/4YQZ4dS.png"
+    alt="Pharmacien"
+    style={{
+      width: "550px",
+      maxWidth: "100%",
+      borderRadius: "20px"
+    }}
+  />
+</div>
           <h3>🏥 Pharmacies partenaires</h3>
 
           <p>• Pharmacie Saint Jean</p>
