@@ -1,1080 +1,843 @@
 import { useState, useEffect } from "react";
+import Head from "next/head";
 
-// ══════════════════════════════════════════
-// TOKENS
-// ══════════════════════════════════════════
+/* ══ TOKENS ══════════════════════════════════════════ */
 const G="#00A859",GL="#C8FFDF",GD="#007A42",GBG="#E8F5EE";
-const W="#FFFFFF",BG="#F4F6F5",TXT="#0E1A13",TXTS="#6B7D73";
-const ERR="#E53935",WARN="#FF8F00",INFO="#1976D2";
+const W="#FFFFFF",BG="#F4F6F5",TXT="#0E1A13",TXTS="#6B7D70";
+const RED="#E63946",AMBER="#F4A261",PURPLE="#6B48FF";
+const WAVE_C="#1A56DB",CP_C="#004B9D";
+const DELIV_STD=500,DELIV_YANGO=800;
+const fmt=n=>n.toLocaleString("fr-FR")+" FCFA";
 
-// ══════════════════════════════════════════
-// DONNÉES INITIALES
-// ══════════════════════════════════════════
-const PHARMACIES_GARDE = [
-  {id:1,nom:"Pharmacie Centrale",commune:"Plateau",adresse:"Av. Lamblin, Plateau",tel:"+225 20 21 18 42",note:4.7,garde:true},
-  {id:2,nom:"Pharmacie Sainte Marie",commune:"Cocody",adresse:"Cocody, Blvd de France",tel:"+225 22 44 55 66",note:4.6,garde:true},
-  {id:3,nom:"Pharmacie de la Paix",commune:"Yopougon",adresse:"Yopougon, Maroc",tel:"+225 23 45 67 89",note:4.5,garde:true},
-];
-
-const MEDICAMENTS = [
-  {id:1,nom:"Paracétamol 500mg",categorie:"Antidouleurs",description:"Boîte 16 cp",prix:500,emoji:"💊",stock:150,ordonnance:false},
-  {id:2,nom:"Ibuprofène 400mg",categorie:"Antidouleurs",description:"Boîte 14 cp",prix:850,emoji:"💊",stock:80,ordonnance:false},
-  {id:3,nom:"Doliprane 1000mg",categorie:"Antidouleurs",description:"Boîte 8 cp",prix:950,emoji:"💊",stock:60,ordonnance:false},
-  {id:4,nom:"Vitamine C 1000mg",categorie:"Vitamines",description:"Boîte 30 cp",prix:1200,emoji:"🍊",stock:200,ordonnance:false},
-  {id:5,nom:"Zinc + Vitamine D3",categorie:"Vitamines",description:"Flacon 60 gél.",prix:2500,emoji:"🌿",stock:90,ordonnance:false},
-  {id:6,nom:"Amoxicilline 500mg",categorie:"Antibiotiques",description:"Boîte 16 gél.",prix:1800,emoji:"💉",stock:45,ordonnance:true},
-  {id:7,nom:"Metronidazole 500mg",categorie:"Antibiotiques",description:"Boîte 14 cp",prix:1200,emoji:"💉",stock:55,ordonnance:true},
-  {id:8,nom:"Sérum physiologique",categorie:"Soins",description:"Flacon 100ml",prix:600,emoji:"🧴",stock:120,ordonnance:false},
-  {id:9,nom:"Thermomètre digital",categorie:"Matériel",description:"Frontal infrarouge",prix:8500,emoji:"🌡️",stock:25,ordonnance:false},
-  {id:10,nom:"Couches bébé Taille 2",categorie:"Bébé",description:"Paquet 40 pièces",prix:4500,emoji:"👶",stock:70,ordonnance:false},
-  {id:11,nom:"Sirop toux enfant",categorie:"Bébé",description:"Flacon 125ml",prix:1500,emoji:"🍼",stock:40,ordonnance:false},
-  {id:12,nom:"Tensio-mètre",categorie:"Matériel",description:"Bras automatique",prix:18000,emoji:"🩺",stock:10,ordonnance:false},
-  {id:13,nom:"Chloroquine 100mg",categorie:"Antidouleurs",description:"Boîte 30 cp",prix:750,emoji:"💊",stock:100,ordonnance:true},
-  {id:14,nom:"Fer + Acide folique",categorie:"Vitamines",description:"Boîte 60 cp",prix:1100,emoji:"🌿",stock:85,ordonnance:false},
-  {id:15,nom:"Gel hydroalcoolique",categorie:"Soins",description:"Flacon 500ml",prix:1800,emoji:"🧴",stock:200,ordonnance:false},
-];
-
-const CATEGORIES = ["Tout","Antidouleurs","Vitamines","Antibiotiques","Soins","Bébé","Matériel"];
-
-const COMMANDES_DEMO = [
-  {id:"SE-0001",date:"2026-06-10",statut:"livree",total:2500,pharmacie:"Pharmacie Centrale",items:[{nom:"Paracétamol 500mg",qte:2,prix:500},{nom:"Vitamine C",qte:1,prix:1200}]},
-  {id:"SE-0002",date:"2026-06-11",statut:"en_cours",total:1800,pharmacie:"Pharmacie de la Paix",items:[{nom:"Ibuprofène 400mg",qte:2,prix:850}]},
-];
-
-// ══════════════════════════════════════════
-// STYLES GLOBAUX
-// ══════════════════════════════════════════
-const S = {
-  app:{minHeight:"100vh",background:BG,fontFamily:"'Segoe UI',system-ui,sans-serif",maxWidth:480,margin:"0 auto",position:"relative"},
-  header:{background:`linear-gradient(135deg,${GD},${G})`,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 12px rgba(0,168,89,0.3)"},
-  logo:{color:W,fontWeight:900,fontSize:20,letterSpacing:-0.5},
-  btn:{background:G,color:W,border:"none",borderRadius:12,padding:"12px 20px",fontWeight:700,fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",gap:8,justifyContent:"center"},
-  btnOutline:{background:"transparent",color:G,border:`2px solid ${G}`,borderRadius:12,padding:"11px 20px",fontWeight:700,fontSize:15,cursor:"pointer"},
-  btnGray:{background:"#E8ECE9",color:TXT,border:"none",borderRadius:12,padding:"12px 20px",fontWeight:600,fontSize:15,cursor:"pointer"},
-  card:{background:W,borderRadius:16,padding:16,boxShadow:"0 2px 8px rgba(0,0,0,0.06)",marginBottom:12},
-  input:{width:"100%",border:`1.5px solid #D4E8DC`,borderRadius:12,padding:"13px 16px",fontSize:15,color:TXT,outline:"none",boxSizing:"border-box",background:W},
-  label:{fontSize:13,fontWeight:600,color:TXTS,marginBottom:6,display:"block"},
-  section:{padding:"0 16px",marginBottom:24},
-  h2:{fontSize:18,fontWeight:800,color:TXT,margin:"0 0 16px"},
-  badge:{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:20,fontSize:12,fontWeight:700},
-  tabs:{display:"flex",background:W,borderBottom:`2px solid #E8ECE9`,position:"sticky",top:56,zIndex:90},
-  tab:{flex:1,padding:"13px 8px",border:"none",background:"transparent",fontWeight:600,fontSize:13,cursor:"pointer",color:TXTS,borderBottom:"3px solid transparent"},
-  tabActive:{color:G,borderBottom:`3px solid ${G}`},
-  bottomNav:{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:W,borderTop:"1.5px solid #E8ECE9",display:"flex",zIndex:200,boxShadow:"0 -2px 12px rgba(0,0,0,0.08)"},
-  navItem:{flex:1,padding:"10px 4px",border:"none",background:"transparent",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,fontSize:11,fontWeight:600,color:TXTS},
-  navItemActive:{color:G},
-  overlay:{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"},
-  modal:{background:W,borderRadius:"20px 20px 0 0",padding:24,width:"100%",maxWidth:480,maxHeight:"90vh",overflowY:"auto"},
-  chip:{padding:"8px 16px",borderRadius:20,border:`1.5px solid #D4E8DC`,background:W,fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"},
-  chipActive:{background:G,color:W,border:`1.5px solid ${G}`},
-  statCard:{background:W,borderRadius:14,padding:16,textAlign:"center",flex:1,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"},
-};
-
-// ══════════════════════════════════════════
-// COMPOSANTS UTILITAIRES
-// ══════════════════════════════════════════
-function Badge({color,bg,children}){
-  return <span style={{...S.badge,background:bg||GL,color:color||GD}}>{children}</span>;
+/* ══ LOGOS ═══════════════════════════════════════════ */
+function LogoWave(){
+  return(
+    <div style={{width:52,height:52,borderRadius:13,background:"#1A56DB",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0,overflow:"hidden"}}>
+      <span style={{color:"rgba(255,255,255,0.6)",fontSize:7,fontWeight:700,letterSpacing:2,marginBottom:2,fontFamily:"Arial"}}>wave</span>
+      <svg width="36" height="16" viewBox="0 0 36 16">
+        <path d="M2 10 C5 3, 8 14, 11 8 C14 2, 17 14, 20 8 C23 2, 26 14, 29 8 C31 4, 33 7, 35 6" stroke="white" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </div>
+  );
+}
+function LogoOrange(){
+  return(
+    <div style={{width:52,height:52,borderRadius:13,background:"#FF6600",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+      <div style={{width:28,height:28,borderRadius:"50%",background:"white",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:3}}>
+        <span style={{color:"#FF6600",fontWeight:900,fontSize:10,fontFamily:"Arial"}}>OM</span>
+      </div>
+      <span style={{color:"rgba(255,255,255,0.9)",fontSize:7,fontWeight:700,fontFamily:"Arial"}}>ORANGE</span>
+    </div>
+  );
+}
+function LogoCinetPay(){
+  return(
+    <div style={{width:52,height:52,borderRadius:13,background:"#004B9D",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+      <div style={{border:"1.5px solid rgba(255,255,255,0.4)",borderRadius:4,padding:"3px 7px",marginBottom:3}}>
+        <span style={{color:"white",fontWeight:700,fontSize:8,fontFamily:"Arial"}}>CINET</span>
+      </div>
+      <span style={{color:"#FFD700",fontWeight:900,fontSize:11,fontFamily:"Arial"}}>PAY</span>
+    </div>
+  );
+}
+function LogoYango(){
+  return(
+    <div style={{width:44,height:44,borderRadius:11,background:"#E31E2D",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+      <span style={{color:"white",fontWeight:900,fontSize:26,lineHeight:1,fontFamily:"Arial Black, Arial"}}>Y</span>
+    </div>
+  );
+}
+function LogoCash(){
+  return <div style={{width:52,height:52,borderRadius:13,background:"#27AE60",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:26}}>💵</div>;
+}
+function LogoInsurance(){
+  return <div style={{width:52,height:52,borderRadius:13,background:PURPLE,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:24}}>🛡️</div>;
 }
 
-function Toast({msg,type,onClose}){
-  useEffect(()=>{const t=setTimeout(onClose,3000);return()=>clearTimeout(t);},[]);
-  const bg=type==="success"?G:type==="error"?ERR:INFO;
+/* ══ DONNÉES STATIQUES ═══════════════════════════════ */
+const CATS=[
+  {id:"all",label:"Tout",icon:"🏪"},
+  {id:"antidouleur",label:"Antidouleurs",icon:"💊"},
+  {id:"vitamines",label:"Vitamines",icon:"🌿"},
+  {id:"antibio",label:"Antibiotiques",icon:"🧬"},
+  {id:"soin",label:"Soins",icon:"🧴"},
+  {id:"bebe",label:"Bébé",icon:"👶"},
+  {id:"materiel",label:"Matériel",icon:"🩺"},
+];
+
+const ASSURANCES=[
+  {id:"cnam",  name:"CNAM",     full:"Caisse Nationale d'Assurance Maladie", cover:70,clr:"#0055A4"},
+  {id:"mugef", name:"MUGEF-CI", full:"Mutuelle Générale des Fonctionnaires", cover:80,clr:"#006633"},
+  {id:"amu",   name:"AMU",      full:"Assurance Maladie Universelle",        cover:60,clr:"#CC0000"},
+  {id:"nsia",  name:"NSIA",     full:"NSIA Assurances CI",                   cover:50,clr:"#E87722"},
+  {id:"axa",   name:"AXA",      full:"AXA Assurance CI",                     cover:65,clr:"#00008F"},
+  {id:"sanlam",name:"Sanlam",   full:"Sanlam Vie CI",                        cover:55,clr:"#003057"},
+];
+
+const INIT_ORDERS=[
+  {id:"PC-0001",date:"08/06/2026",items:[{name:"Paracétamol 500mg",qty:2,price:500}],subtotal:1000,delivFee:500,total:1500,status:"delivered",pharmacy:"Pharmacie du Plateau",payment:"wave",delivMode:"std",address:"Cocody, Abidjan",phone:"",rating:5},
+  {id:"PC-0002",date:"04/06/2026",items:[{name:"Vitamine C",qty:1,price:1200},{name:"Zinc+D3",qty:1,price:2500}],subtotal:3700,delivFee:500,total:4200,status:"delivered",pharmacy:"Pharmacie Sainte Marie",payment:"orange",delivMode:"std",address:"Plateau, Abidjan",phone:"",rating:null},
+];
+
+/* ══ COMPOSANTS ══════════════════════════════════════ */
+
+function Header({mode,navBack,count,setMode,user,onLogin}){
+  const T={catalog:"Catalogue",product:"Détails",cart:"Mon panier",checkout:"Paiement",tracking:"Suivi commande",history:"Mes commandes",rating:"Laisser un avis",livreur:"Espace Livreur 🛵",admin:"Administration ⚙️",pharmacie:"Espace Pharmacie 🏥"};
   return(
-    <div style={{position:"fixed",top:70,left:"50%",transform:"translateX(-50%)",background:bg,color:W,padding:"12px 20px",borderRadius:12,fontWeight:700,fontSize:14,zIndex:999,boxShadow:"0 4px 20px rgba(0,0,0,0.2)",maxWidth:360,textAlign:"center"}}>
-      {msg}
+    <div style={{background:G,padding:"15px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 14px rgba(0,0,0,0.18)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        {mode!=="landing"&&<button onClick={navBack} style={{background:"rgba(255,255,255,0.22)",border:"none",borderRadius:8,width:34,height:34,color:W,fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>}
+        {mode==="landing"
+          ?<h1 style={{color:W,fontSize:22,fontWeight:900,margin:0,letterSpacing:-0.5}}>SANTÉ<span style={{color:GL}}>EXPRESS</span></h1>
+          :<span style={{color:W,fontWeight:700,fontSize:16}}>{T[mode]||mode}</span>}
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        {!["checkout","rating","livreur","admin","pharmacie"].includes(mode)&&(
+          <button onClick={()=>setMode("cart")} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:20,padding:"6px 14px",color:W,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+            🛒{count>0&&<span style={{background:RED,borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800}}>{count}</span>}
+          </button>
+        )}
+        {mode==="landing"&&(user
+          ?<span style={{color:GL,fontSize:12,fontWeight:600}}>👤 {user.nom?.split(" ")[0]||"Moi"}</span>
+          :<button onClick={onLogin} style={{background:"rgba(255,255,255,0.22)",border:"none",borderRadius:20,padding:"7px 14px",color:W,fontWeight:700,cursor:"pointer",fontSize:12}}>Connexion</button>
+        )}
+      </div>
     </div>
   );
 }
 
-function Spinner(){
-  return <div style={{width:24,height:24,border:`3px solid ${GL}`,borderTop:`3px solid ${G}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"20px auto"}} />;
+function BottomNav({mode,setMode,count}){
+  const items=[{m:"landing",ic:"🏠",lb:"Accueil"},{m:"catalog",ic:"🛍️",lb:"Catalogue"},{m:"history",ic:"📋",lb:"Commandes"},{m:"admin",ic:"⚙️",lb:"Admin"}];
+  return(
+    <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:W,borderTop:"1px solid #E8EDE9",display:"flex",zIndex:99}}>
+      {items.map(({m,ic,lb})=>(
+        <button key={m} onClick={()=>setMode(m)} style={{flex:1,background:"none",border:"none",padding:"9px 4px 7px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+          <span style={{fontSize:19}}>{ic}</span>
+          <span style={{fontSize:10,fontWeight:mode===m?700:400,color:mode===m?G:TXTS}}>{lb}</span>
+          {mode===m&&<div style={{width:18,height:2.5,background:G,borderRadius:2}}/>}
+        </button>
+      ))}
+    </div>
+  );
 }
 
-// ══════════════════════════════════════════
-// PAGE ACCUEIL
-// ══════════════════════════════════════════
-function PageAccueil({setPage,panier,setPanier,user}){
-  const [commune,setCommune]=useState("Toutes");
-  const [searchQ,setSearchQ]=useState("");
-  const communes=["Toutes","Plateau","Cocody","Yopougon","Abobo","Adjamé","Marcory","Treichville","Koumassi","Port-Bouët"];
-
+function SearchingPharmacy({commune,onFound}){
+  const [step,setStep]=useState(0);
+  const steps=["📡 Localisation en cours...","🔍 Recherche des pharmacies ouvertes...","💊 Vérification des stocks...","✅ Pharmacie trouvée !"];
+  useEffect(()=>{
+    if(step<3){const t=setTimeout(()=>setStep(s=>s+1),1200);return()=>clearTimeout(t);}
+    else{const t=setTimeout(onFound,1000);return()=>clearTimeout(t);}
+  },[step]);
   return(
-    <div style={{paddingBottom:80}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{background:W,borderRadius:20,padding:30,width:300,textAlign:"center"}}>
+        <div style={{fontSize:52,marginBottom:16}}>🏥</div>
+        <h3 style={{color:TXT,fontWeight:800,marginBottom:16}}>Affectation en cours</h3>
+        {steps.map((s,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,opacity:i<=step?1:0.3,transition:"opacity 0.5s"}}>
+            <span style={{fontSize:16}}>{i<step?"✅":i===step?"⏳":"⬜"}</span>
+            <span style={{color:TXT,fontSize:13,fontWeight:i===step?700:400}}>{s}</span>
+          </div>
+        ))}
+        {step===3&&<div style={{marginTop:16,background:GBG,borderRadius:12,padding:12}}>
+          <p style={{color:GD,fontWeight:700,fontSize:13,margin:0}}>🎉 Commande confirmée !</p>
+          <p style={{color:TXTS,fontSize:12,margin:"4px 0 0"}}>Pharmacie proche assignée</p>
+        </div>}
+      </div>
+    </div>
+  );
+}
+
+const COMMUNES=["Toutes","Plateau","Cocody","Yopougon","Abobo","Adjamé","Marcory","Treichville","Koumassi","Port-Bouët","Attécoubé","Bingerville","Anyama","Songon"];
+
+function Landing({setMode,setCat,pharmacies}){
+  const [q,setQ]=useState("");
+  const [commune,setCommune]=useState("Toutes");
+  const go=()=>{setMode("catalog");};
+  const gardeList=(pharmacies||[]).filter(p=>p.est_garde||p.garde);
+  const filteredPharma=commune==="Toutes"?(pharmacies||[]):(pharmacies||[]).filter(p=>(p.district||p.commune)===commune);
+  return(
+    <div style={{paddingBottom:16}}>
       {/* HERO */}
-      <div style={{background:`linear-gradient(160deg,${GD} 0%,${G} 100%)`,padding:"28px 20px 32px",color:W}}>
-        <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-          {["🌙 Garde 24h/24","🛵 Livraison rapide","📱 Mobile Money"].map(t=>(
-            <span key={t} style={{background:"rgba(255,255,255,0.15)",borderRadius:20,padding:"5px 12px",fontSize:12,fontWeight:600,color:W}}>{t}</span>
-          ))}
+      <div style={{position:"relative",minHeight:480,background:`linear-gradient(160deg,${GD} 0%,#002918 100%)`,overflow:"hidden"}}>
+        <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,rgba(0,40,20,0.95) 40%,rgba(0,40,20,0.3) 100%)"}}/>
+        <div style={{position:"relative",zIndex:2,padding:"32px 22px 40px"}}>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:24}}>
+            {[["🌙","Garde 24h/24"],["🛵","Livraison rapide"],["📱","Mobile Money"]].map(([ic,lb])=>(
+              <span key={lb} style={{background:"rgba(255,255,255,0.12)",backdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,0.18)",borderRadius:30,padding:"7px 14px",color:W,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>{ic} {lb}</span>
+            ))}
+          </div>
+          <h1 style={{color:W,fontSize:36,fontWeight:900,lineHeight:1.1,margin:"0 0 16px",letterSpacing:-1}}>
+            Vos médicaments<br/><span style={{color:"#7EFFC5"}}>livrés chez vous.</span>
+          </h1>
+          <p style={{color:"rgba(255,255,255,0.65)",fontSize:15,lineHeight:1.7,marginBottom:28,maxWidth:300}}>Trouvez une pharmacie de garde à Abidjan et commandez en quelques secondes.</p>
+          <button onClick={()=>setMode("catalog")} style={{width:"100%",background:G,color:W,border:"none",borderRadius:50,padding:"17px 24px",fontWeight:900,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:"0 8px 30px rgba(0,168,89,0.4)",marginBottom:12}}>
+            Commander mes médicaments <span style={{fontSize:18}}>→</span>
+          </button>
+          <button onClick={()=>setMode("pharmacie")} style={{width:"100%",background:"rgba(255,255,255,0.1)",color:W,border:"1.5px solid rgba(255,255,255,0.25)",borderRadius:50,padding:"14px 24px",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+            🏥 Espace Pharmacie
+          </button>
         </div>
-        <h1 style={{fontSize:28,fontWeight:900,margin:"0 0 8px",lineHeight:1.2}}>
-          Vos médicaments<br/><span style={{color:GL}}>livrés chez vous.</span>
-        </h1>
-        <p style={{fontSize:14,opacity:0.85,margin:"0 0 20px"}}>Trouvez une pharmacie de garde à Abidjan et commandez en quelques secondes.</p>
-        <button style={{...S.btn,background:W,color:G,fontSize:16,padding:"15px 24px",borderRadius:14,width:"100%",marginBottom:10}} onClick={()=>setPage("catalogue")}>
-          Commander mes médicaments →
-        </button>
-        <button style={{...S.btn,background:"rgba(255,255,255,0.15)",color:W,fontSize:14,padding:"12px 24px",borderRadius:14,width:"100%"}} onClick={()=>setPage("pharmacie")}>
-          🏥 Espace Pharmacie
-        </button>
-        <div style={{display:"flex",gap:24,marginTop:20,justifyContent:"center"}}>
-          {[["200+","Médicaments"],["30 min","Livraison"],["316","Pharmacies"]].map(([v,l])=>(
+      </div>
+
+      {/* STATS */}
+      <div style={{background:TXT,padding:"22px 22px"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:4}}>
+          {[["200+","Médicaments"],["30 min","Livraison"],["12","Pharmacies"]].map(([v,l])=>(
             <div key={l} style={{textAlign:"center"}}>
-              <div style={{fontSize:22,fontWeight:900,color:GL}}>{v}</div>
-              <div style={{fontSize:11,opacity:0.75}}>{l}</div>
+              <p style={{color:GL,fontWeight:900,fontSize:22,margin:"0 0 3px"}}>{v}</p>
+              <p style={{color:"rgba(255,255,255,0.5)",fontSize:11,margin:0}}>{l}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* SEARCH */}
-      <div style={{padding:"16px 16px 0"}}>
-        <div style={{position:"relative"}}>
-          <input placeholder="Rechercher un médicament..." value={searchQ} onChange={e=>{setSearchQ(e.target.value);if(e.target.value.length>0)setPage("catalogue");}}
-            style={{...S.input,paddingLeft:44,paddingRight:100}} />
-          <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:18}}>🔍</span>
-          {searchQ&&<button style={{...S.btn,position:"absolute",right:4,top:"50%",transform:"translateY(-50%)",padding:"8px 14px",borderRadius:10,fontSize:13}} onClick={()=>setPage("catalogue")}>Chercher</button>}
-        </div>
-      </div>
-
       {/* PAIEMENTS */}
-      <div style={{...S.section,marginTop:20}}>
-        <p style={{fontSize:11,fontWeight:700,color:G,letterSpacing:1,margin:"0 0 8px"}}>PAIEMENT</p>
-        <h2 style={S.h2}>Payez comme vous voulez</h2>
+      <div style={{margin:"16px 16px 0",background:W,borderRadius:20,padding:20,boxShadow:"0 2px 16px rgba(0,0,0,0.06)"}}>
+        <p style={{color:G,fontWeight:700,fontSize:11,letterSpacing:2,marginBottom:6}}>PAIEMENT</p>
+        <h3 style={{color:TXT,fontWeight:900,fontSize:18,margin:"0 0 16px"}}>Payez comme vous voulez</h3>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          {[["wave","Wave CI","Instantané","#1a73e8"],["om","Orange Money","Mobile Money","#ff6600"],["cinet","Visa/Mastercard","CinetPay","#6c3bc2"],["cash","Cash","À la livraison","#2e7d32"]].map(([id,nom,sub,color])=>(
-            <div key={id} style={{...S.card,display:"flex",alignItems:"center",gap:10,padding:12,marginBottom:0}}>
-              <div style={{width:44,height:44,borderRadius:10,background:color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:W,fontWeight:900,flexShrink:0}}>
-                {id==="wave"?"W":id==="om"?"OM":id==="cinet"?"CP":"$"}
-              </div>
-              <div><div style={{fontWeight:700,fontSize:13}}>{nom}</div><div style={{fontSize:11,color:TXTS}}>{sub}</div></div>
+          {[{logo:<LogoWave/>,lb:"Wave CI",desc:"Instantané"},{logo:<LogoOrange/>,lb:"Orange Money",desc:"Mobile Money"},{logo:<LogoCinetPay/>,lb:"Visa/Mastercard",desc:"CinetPay"},{logo:<LogoCash/>,lb:"Cash",desc:"À la livraison"}].map(({logo,lb,desc})=>(
+            <div key={lb} style={{display:"flex",alignItems:"center",gap:10,background:BG,borderRadius:12,padding:10}}>
+              <div style={{flexShrink:0}}>{logo}</div>
+              <div><p style={{color:TXT,fontWeight:700,fontSize:12,margin:"0 0 1px"}}>{lb}</p><p style={{color:TXTS,fontSize:10,margin:0}}>{desc}</p></div>
             </div>
           ))}
         </div>
       </div>
 
       {/* PHARMACIES DE GARDE */}
-      <div style={S.section}>
-        <h2 style={S.h2}>🌙 Pharmacies de garde ce soir</h2>
-        <div style={{display:"flex",gap:12,overflowX:"auto",paddingBottom:8}}>
-          {PHARMACIES_GARDE.map(p=>(
-            <div key={p.id} style={{...S.card,minWidth:200,marginBottom:0,flexShrink:0}}>
-              <Badge>GARDE 24h</Badge>
-              <div style={{fontWeight:700,margin:"8px 0 2px"}}>{p.nom}</div>
-              <div style={{fontSize:12,color:TXTS}}>{p.commune}</div>
-              <div style={{fontSize:12,color:TXTS,marginBottom:8}}>{p.adresse}</div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:13,color:WARN}}>⭐ {p.note}</span>
-                <a href={`tel:${p.tel}`} style={{color:G,fontSize:12,fontWeight:700,textDecoration:"none"}}>📞 {p.tel}</a>
+      {gardeList.length>0&&(
+        <div style={{padding:"16px 16px 0"}}>
+          <h3 style={{color:TXT,fontWeight:900,margin:"0 0 12px",fontSize:17}}>🌙 Pharmacies de garde ce soir</h3>
+          <div style={{overflowX:"auto",display:"flex",gap:12,scrollbarWidth:"none",paddingBottom:4}}>
+            {gardeList.map(ph=>(
+              <div key={ph.id} style={{background:W,borderRadius:16,padding:14,minWidth:190,flexShrink:0,boxShadow:"0 2px 12px rgba(0,0,0,0.08)",border:`1.5px solid ${GBG}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                  <div style={{width:40,height:40,borderRadius:10,background:GBG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🏥</div>
+                  <span style={{background:"#FFF3E0",color:"#E65100",fontSize:9,fontWeight:800,padding:"3px 7px",borderRadius:6}}>GARDE 24h</span>
+                </div>
+                <p style={{color:TXT,fontWeight:700,fontSize:12,margin:"0 0 2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ph.nom||ph.name}</p>
+                <p style={{color:TXTS,fontSize:11,margin:"0 0 2px"}}>{ph.district}</p>
+                <p style={{color:TXTS,fontSize:10,margin:"0 0 8px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ph.adresse}</p>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{color:G,fontSize:10,fontWeight:700}}>⭐ {ph.note||ph.rating}</span>
+                  {ph.telephone&&<span style={{color:WAVE_C,fontSize:10,fontWeight:600}}>📞 {ph.telephone}</span>}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* TOUTES LES PHARMACIES */}
-      <div style={S.section}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <h2 style={{...S.h2,margin:0}}>🏥 Toutes les pharmacies</h2>
-          <span style={{fontSize:12,color:TXTS}}>316 pharmacies</span>
-        </div>
-        <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:10}}>
-          {communes.map(c=>(
-            <button key={c} style={{...S.chip,...(commune===c?S.chipActive:{})}} onClick={()=>setCommune(c)}>{c}</button>
-          ))}
-        </div>
-        {PHARMACIES_GARDE.filter(p=>commune==="Toutes"||p.commune===commune).map(p=>(
-          <div key={p.id} style={{...S.card,display:"flex",alignItems:"center",gap:12}}>
-            <div style={{width:44,height:44,borderRadius:12,background:GBG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>🏥</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:700,fontSize:14}}>{p.nom}</div>
-              <div style={{fontSize:12,color:TXTS}}>{p.commune} · {p.adresse}</div>
-              <div style={{display:"flex",gap:12,marginTop:4}}>
-                <span style={{fontSize:12,color:WARN}}>⭐ {p.note}</span>
-                <a href={`tel:${p.tel}`} style={{fontSize:12,color:G,fontWeight:600,textDecoration:"none"}}>📞 {p.tel}</a>
-              </div>
-            </div>
-            <span style={{fontSize:11,color:G,fontWeight:700}}>● Ouvert</span>
+            ))}
           </div>
-        ))}
-      </div>
-
-      {/* CATÉGORIES */}
-      <div style={S.section}>
-        <h2 style={S.h2}>Catégories</h2>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-          {[["💊","Antidouleurs"],["🌿","Vitamines"],["🧬","Antibiotiques"],["🧴","Soins"],["👶","Bébé"],["🩺","Matériel"]].map(([e,n])=>(
-            <div key={n} style={{...S.card,textAlign:"center",padding:"16px 8px",cursor:"pointer",marginBottom:0}} onClick={()=>setPage("catalogue")}>
-              <div style={{fontSize:28,marginBottom:6}}>{e}</div>
-              <div style={{fontSize:12,fontWeight:700,color:TXT}}>{n}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ESPACES */}
-      <div style={S.section}>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-          {[["🛵","Livreur","livreur"],["🏥","Pharmacie","pharmacie"],["⚙️","Admin","admin"]].map(([e,n,p])=>(
-            <button key={p} style={{...S.btnOutline,display:"flex",flexDirection:"column",alignItems:"center",gap:6,padding:"14px 8px",borderRadius:14}} onClick={()=>setPage(p)}>
-              <span style={{fontSize:24}}>{e}</span><span style={{fontSize:12}}>{n}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{textAlign:"center",padding:"8px 16px 0",color:TXTS,fontSize:12}}>
-        🇨🇮 SantéExpress · Abidjan, Côte d'Ivoire<br/>
-        Pharmaciens certifiés · Paiements sécurisés
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════
-// PAGE CATALOGUE
-// ══════════════════════════════════════════
-function PageCatalogue({panier,setPanier,setPage}){
-  const [cat,setCat]=useState("Tout");
-  const [search,setSearch]=useState("");
-  const [toast,setToast]=useState(null);
-
-  const filtered=MEDICAMENTS.filter(m=>{
-    const matchCat=cat==="Tout"||m.categorie===cat;
-    const matchSearch=search===""||m.nom.toLowerCase().includes(search.toLowerCase());
-    return matchCat&&matchSearch;
-  });
-
-  function ajouterAuPanier(med){
-    setPanier(prev=>{
-      const ex=prev.find(i=>i.id===med.id);
-      if(ex)return prev.map(i=>i.id===med.id?{...i,qte:i.qte+1}:i);
-      return [...prev,{...med,qte:1}];
-    });
-    setToast({msg:`${med.nom} ajouté au panier ✓`,type:"success"});
-  }
-
-  const totalPanier=panier.reduce((s,i)=>s+i.qte,0);
-
-  return(
-    <div style={{paddingBottom:80}}>
-      {toast&&<Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
-      <div style={{padding:"12px 16px",background:W,position:"sticky",top:56,zIndex:90,boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
-        <input placeholder="Rechercher un médicament..." value={search} onChange={e=>setSearch(e.target.value)}
-          style={{...S.input,marginBottom:10}} />
-        <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4}}>
-          {CATEGORIES.map(c=>(
-            <button key={c} style={{...S.chip,...(cat===c?S.chipActive:{})}} onClick={()=>setCat(c)}>{c}</button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{padding:"12px 16px"}}>
-        {filtered.length===0&&<div style={{textAlign:"center",padding:40,color:TXTS}}>Aucun médicament trouvé</div>}
-        {filtered.map(med=>(
-          <div key={med.id} style={{...S.card,display:"flex",alignItems:"center",gap:12}}>
-            <div style={{width:48,height:48,borderRadius:12,background:GBG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{med.emoji}</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:700,fontSize:14}}>{med.nom}</div>
-              <div style={{fontSize:12,color:TXTS}}>{med.description}</div>
-              {med.ordonnance&&<Badge color={ERR} bg="#FFEBEE">Sur ordonnance</Badge>}
-              <div style={{fontWeight:800,color:G,fontSize:15,marginTop:4}}>{med.prix.toLocaleString()} FCFA</div>
-            </div>
-            <button style={{...S.btn,padding:"9px 14px",borderRadius:10,fontSize:13,flexShrink:0}} onClick={()=>ajouterAuPanier(med)}>
-              + Ajouter
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {totalPanier>0&&(
-        <div style={{position:"fixed",bottom:70,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:448,zIndex:150}}>
-          <button style={{...S.btn,width:"100%",padding:"16px",borderRadius:14,fontSize:16,boxShadow:"0 4px 20px rgba(0,168,89,0.4)"}} onClick={()=>setPage("panier")}>
-            🛒 Voir mon panier ({totalPanier} article{totalPanier>1?"s":""})
-          </button>
         </div>
       )}
+
+      {/* TOUTES LES PHARMACIES PAR COMMUNE */}
+      <div style={{padding:"20px 16px 0"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <h3 style={{color:TXT,fontWeight:900,margin:0,fontSize:17}}>🏥 Toutes les pharmacies</h3>
+          <span style={{color:TXTS,fontSize:11}}>{filteredPharma.length} pharmacies</span>
+        </div>
+        {/* Filtre communes */}
+        <div style={{overflowX:"auto",display:"flex",gap:7,scrollbarWidth:"none",marginBottom:14,paddingBottom:2}}>
+          {COMMUNES.map(c=>(
+            <button key={c} onClick={()=>setCommune(c)}
+              style={{background:commune===c?G:W,color:commune===c?W:TXT,border:`1.5px solid ${commune===c?G:"#E0E8E3"}`,borderRadius:20,padding:"6px 13px",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",fontSize:11,flexShrink:0}}>
+              {c}
+            </button>
+          ))}
+        </div>
+        {/* Liste pharmacies */}
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {filteredPharma.map(ph=>(
+            <div key={ph.id} style={{background:W,borderRadius:14,padding:14,display:"flex",gap:12,alignItems:"flex-start",boxShadow:"0 2px 8px rgba(0,0,0,0.06)",border:`1px solid ${ph.est_garde?"#FFE0B2":"#F0F4F1"}`}}>
+              <div style={{width:44,height:44,borderRadius:11,background:ph.est_garde?"#FFF3E0":GBG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
+                {ph.est_garde?"🌙":"🏥"}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:3}}>
+                  <p style={{color:TXT,fontWeight:700,fontSize:13,margin:0,flex:1,lineHeight:1.3}}>{ph.nom}</p>
+                  <span style={{color:ph.est_ouvert?G:RED,fontSize:10,fontWeight:700,flexShrink:0,marginLeft:8}}>
+                    {ph.est_ouvert?"● Ouvert":"● Fermé"}
+                  </span>
+                </div>
+                <p style={{color:TXTS,fontSize:11,margin:"0 0 4px"}}>{ph.district} · {ph.adresse}</p>
+                <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+                  <span style={{color:GD,fontSize:11,fontWeight:600}}>⭐ {ph.note}</span>
+                  {ph.telephone&&<span style={{color:TXTS,fontSize:10}}>📞 {ph.telephone}</span>}
+                  {ph.est_garde&&<span style={{background:"#FFF3E0",color:"#E65100",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:5}}>GARDE</span>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CATEGORIES */}
+      <div style={{padding:"16px 16px 0"}}>
+        <h3 style={{color:TXT,fontWeight:900,margin:"0 0 12px",fontSize:17}}>Catégories</h3>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+          {CATS.filter(c=>c.id!=="all").map(c=>(
+            <button key={c.id} onClick={()=>{setCat(c.id);setMode("catalog");}} style={{background:W,border:"none",borderRadius:14,padding:"14px 5px",textAlign:"center",cursor:"pointer",boxShadow:"0 2px 10px rgba(0,0,0,0.06)"}}>
+              <div style={{fontSize:24,marginBottom:5}}>{c.icon}</div>
+              <p style={{color:TXT,fontSize:11,fontWeight:700,margin:0}}>{c.label}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ACCES RAPIDE */}
+      <div style={{padding:"16px 16px 0"}}>
+        <div style={{display:"flex",gap:10}}>
+          {[["🛵","Livreur","livreur"],["🏥","Pharmacie","pharmacie"],["⚙️","Admin","admin"]].map(([ic,lb,m])=>(
+            <button key={m} onClick={()=>setMode(m)} style={{flex:1,background:W,border:`1.5px solid ${G}`,borderRadius:14,padding:"13px 8px",display:"flex",alignItems:"center",justifyContent:"center",gap:7,cursor:"pointer",boxShadow:"0 2px 10px rgba(0,0,0,0.06)"}}>
+              <span style={{fontSize:18}}>{ic}</span><span style={{color:GD,fontWeight:700,fontSize:12}}>{lb}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* RECHERCHE */}
+      <div style={{margin:"16px 16px 0",background:W,borderRadius:50,display:"flex",overflow:"hidden",boxShadow:"0 4px 20px rgba(0,0,0,0.12)",border:`2px solid ${G}`}}>
+        <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="🔍 Rechercher un médicament..." style={{flex:1,border:"none",padding:"14px 18px",fontSize:14,outline:"none",color:TXT,background:"transparent"}}/>
+        <button onClick={go} style={{background:G,border:"none",padding:"0 20px",color:W,fontWeight:800,cursor:"pointer",fontSize:14}}>Chercher</button>
+      </div>
+
+      <div style={{margin:"16px 16px 0",padding:"16px",textAlign:"center"}}>
+        <p style={{color:TXTS,fontSize:11,margin:0}}>🇨🇮 SantéExpress · Abidjan, Côte d'Ivoire</p>
+        <p style={{color:TXTS,fontSize:10,margin:"4px 0 0"}}>Pharmaciens certifiés · Paiements sécurisés</p>
+      </div>
     </div>
   );
 }
 
-// ══════════════════════════════════════════
-// PAGE PANIER
-// ══════════════════════════════════════════
-function PagePanier({panier,setPanier,setPage}){
-  function updateQte(id,delta){
-    setPanier(prev=>prev.map(i=>i.id===id?{...i,qte:Math.max(0,i.qte+delta)}:i).filter(i=>i.qte>0));
-  }
-  function supprimer(id){setPanier(prev=>prev.filter(i=>i.id!==id));}
-  const sous_total=panier.reduce((s,i)=>s+i.prix*i.qte,0);
-  const livraison=500;
-  const total=sous_total+livraison;
-
-  if(panier.length===0)return(
-    <div style={{padding:40,textAlign:"center"}}>
-      <div style={{fontSize:60,marginBottom:16}}>🛒</div>
-      <p style={{color:TXTS,marginBottom:20}}>Votre panier est vide</p>
-      <button style={S.btn} onClick={()=>setPage("catalogue")}>Voir le catalogue</button>
-    </div>
-  );
-
+function Catalog({items,cats,cat,setCat,search,setSearch,onSelect,onAdd}){
   return(
-    <div style={{paddingBottom:160}}>
-      <div style={{padding:"16px 16px 0"}}>
-        {panier.map(item=>(
-          <div key={item.id} style={{...S.card,display:"flex",alignItems:"center",gap:12}}>
-            <div style={{fontSize:28}}>{item.emoji}</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:700,fontSize:14}}>{item.nom}</div>
-              <div style={{fontWeight:800,color:G}}>{(item.prix*item.qte).toLocaleString()} FCFA</div>
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <button onClick={()=>updateQte(item.id,-1)} style={{width:30,height:30,borderRadius:8,border:`1.5px solid ${G}`,background:W,color:G,fontWeight:800,cursor:"pointer",fontSize:16}}>−</button>
-              <span style={{fontWeight:700,minWidth:20,textAlign:"center"}}>{item.qte}</span>
-              <button onClick={()=>updateQte(item.id,1)} style={{width:30,height:30,borderRadius:8,background:G,border:"none",color:W,fontWeight:800,cursor:"pointer",fontSize:16}}>+</button>
-              <button onClick={()=>supprimer(item.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,marginLeft:4}}>🗑️</button>
-            </div>
-          </div>
+    <div>
+      <div style={{padding:"12px 14px 6px"}}>
+        <div style={{display:"flex",background:W,borderRadius:11,overflow:"hidden",border:`2px solid ${G}`}}>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Rechercher un médicament..." style={{flex:1,border:"none",padding:"11px 13px",fontSize:14,outline:"none",color:TXT}}/>
+          {search&&<button onClick={()=>setSearch("")} style={{background:"none",border:"none",padding:"0 13px",color:TXTS,cursor:"pointer",fontSize:17}}>✕</button>}
+        </div>
+      </div>
+      <div style={{overflowX:"auto",padding:"6px 14px",display:"flex",gap:7,scrollbarWidth:"none"}}>
+        {cats.map(c=>(
+          <button key={c.id} onClick={()=>setCat(c.id)} style={{background:cat===c.id?G:W,color:cat===c.id?W:TXT,border:"none",borderRadius:20,padding:"7px 13px",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",fontSize:12,boxShadow:"0 2px 6px rgba(0,0,0,0.08)",flexShrink:0}}>
+            {c.icon} {c.label}
+          </button>
         ))}
       </div>
+      <div style={{padding:"6px 14px 80px"}}>
+        {items.length===0
+          ?<div style={{textAlign:"center",padding:"60px 0",color:TXTS}}><div style={{fontSize:48}}>🔍</div><p style={{fontWeight:600,marginTop:12}}>Aucun produit trouvé</p></div>
+          :items.map(p=>(
+            <div key={p.id} onClick={()=>onSelect(p)} style={{background:W,borderRadius:13,padding:13,marginBottom:9,display:"flex",alignItems:"center",gap:11,boxShadow:"0 2px 8px rgba(0,0,0,0.06)",cursor:"pointer"}}>
+              <div style={{width:50,height:50,borderRadius:11,background:GBG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{p.emoji}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}>
+                  <p style={{color:TXT,fontWeight:700,fontSize:13,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nom||p.name}</p>
+                  {(p.necessite_ordonnance||p.rx)&&<span style={{background:"#FFF3CD",color:"#7A5A00",fontSize:9,fontWeight:700,padding:"2px 5px",borderRadius:4,flexShrink:0}}>ORDO</span>}
+                </div>
+                <p style={{color:TXTS,fontSize:11,margin:"0 0 5px"}}>{p.unite||p.unit}</p>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <p style={{color:GD,fontWeight:800,fontSize:13,margin:0}}>{fmt(p.prix||p.price)}</p>
+                  <button onClick={e=>{e.stopPropagation();if(p.en_stock||p.stock)onAdd(p);}} disabled={!(p.en_stock||p.stock)}
+                    style={{background:(p.en_stock||p.stock)?G:"#DDD",color:W,border:"none",borderRadius:8,padding:"5px 12px",fontWeight:700,cursor:(p.en_stock||p.stock)?"pointer":"not-allowed",fontSize:12}}>
+                    {(p.en_stock||p.stock)?"+ Ajouter":"Rupture"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+      </div>
+    </div>
+  );
+}
 
-      <div style={{position:"fixed",bottom:70,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:448,background:W,borderRadius:"16px 16px 0 0",padding:16,boxShadow:"0 -4px 20px rgba(0,0,0,0.1)"}}>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-          <span style={{color:TXTS}}>Sous-total</span><span style={{fontWeight:700}}>{sous_total.toLocaleString()} FCFA</span>
+function Product({product,onAdd,inCart}){
+  const price=product.prix||product.price;
+  const stock=product.en_stock||product.stock;
+  const rx=product.necessite_ordonnance||product.rx;
+  return(
+    <div style={{paddingBottom:90}}>
+      <div style={{background:GBG,padding:"40px 18px",textAlign:"center"}}>
+        <div style={{fontSize:76}}>{product.emoji}</div>
+        {rx&&<div style={{display:"inline-flex",alignItems:"center",gap:6,background:AMBER,color:W,borderRadius:20,padding:"6px 15px",marginTop:12,fontWeight:700,fontSize:12}}>⚠️ Ordonnance requise</div>}
+      </div>
+      <div style={{padding:"18px 18px 0"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+          <h2 style={{color:TXT,fontWeight:900,fontSize:20,margin:0,flex:1,lineHeight:1.3}}>{product.nom||product.name}</h2>
+          <span style={{color:stock?G:RED,fontWeight:700,fontSize:12,marginLeft:8,flexShrink:0}}>{stock?"✓ En stock":"✗ Rupture"}</span>
         </div>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
-          <span style={{color:TXTS}}>Livraison</span><span style={{fontWeight:700,color:G}}>{livraison} FCFA</span>
+        <p style={{color:TXTS,fontSize:13,marginBottom:14}}>{product.unite||product.unit}</p>
+        <div style={{background:GBG,borderRadius:11,padding:14,marginBottom:16}}>
+          <p style={{color:TXTS,fontSize:10,fontWeight:700,margin:"0 0 3px",letterSpacing:1}}>PRIX</p>
+          <p style={{color:GD,fontWeight:900,fontSize:28,margin:0}}>{fmt(price)}</p>
+          <p style={{color:TXTS,fontSize:11,margin:"3px 0 0"}}>+ Livraison à partir de {fmt(DELIV_STD)}</p>
         </div>
-        <div style={{display:"flex",justifyContent:"space-between",marginBottom:16,fontSize:18,fontWeight:800}}>
-          <span>Total</span><span style={{color:G}}>{total.toLocaleString()} FCFA</span>
+        <h3 style={{color:TXT,fontWeight:700,fontSize:14,marginBottom:7}}>Description</h3>
+        <p style={{color:TXTS,lineHeight:1.75,fontSize:13,marginBottom:14}}>{product.description||product.desc}</p>
+        <div style={{background:"#EEF4FF",border:"1px solid #C5D8FF",borderRadius:10,padding:12,marginBottom:12}}>
+          <p style={{color:WAVE_C,fontSize:12,margin:0,fontWeight:600}}>🛡️ Prise en charge possible par CNAM, MUGEF-CI, AMU.</p>
         </div>
-        <button style={{...S.btn,width:"100%",padding:16,fontSize:16,borderRadius:12}} onClick={()=>setPage("checkout")}>
-          Commander · {total.toLocaleString()} FCFA
+      </div>
+      <div style={{position:"fixed",bottom:64,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,padding:"13px 18px",background:W,borderTop:"1px solid #E8EDE9"}}>
+        <button onClick={()=>{if(stock&&!inCart)onAdd(product);}} disabled={!stock||inCart}
+          style={{width:"100%",background:inCart?"#4CAF50":(stock?G:"#CCC"),color:W,border:"none",borderRadius:13,padding:14,fontWeight:800,cursor:(stock&&!inCart)?"pointer":"default",fontSize:15}}>
+          {inCart?"✓ Ajouté au panier":(stock?"🛒 Ajouter au panier":"Rupture de stock")}
         </button>
       </div>
     </div>
   );
 }
 
-// ══════════════════════════════════════════
-// PAGE CHECKOUT
-// ══════════════════════════════════════════
-function PageCheckout({panier,setPanier,setPage,setCommandeActive}){
-  const [form,setForm]=useState({nom:"",tel:"",adresse:"",note:""});
-  const [paiement,setPaiement]=useState("");
-  const [livraison,setLivraison]=useState("std");
-  const [loading,setLoading]=useState(false);
-  const [etape,setEtape]=useState(0);
+function Cart({cart,subtotal,delivFee,onRemove,onQty,onCheckout,setMode}){
+  const hasOrdo=cart.some(i=>i.rx||i.necessite_ordonnance);
+  if(!cart.length) return(
+    <div style={{textAlign:"center",padding:"70px 22px"}}>
+      <div style={{fontSize:68}}>🛒</div>
+      <h3 style={{color:TXT,fontWeight:800,marginTop:14,marginBottom:8}}>Panier vide</h3>
+      <p style={{color:TXTS,marginBottom:24,fontSize:13}}>Parcourez notre catalogue et ajoutez des médicaments</p>
+      <button onClick={()=>setMode("catalog")} style={{background:G,color:W,border:"none",borderRadius:11,padding:"13px 26px",fontWeight:700,cursor:"pointer",fontSize:14}}>Voir le catalogue</button>
+    </div>
+  );
+  return(
+    <div style={{paddingBottom:155}}>
+      <div style={{padding:"13px 14px 6px"}}>
+        {hasOrdo&&(
+          <div style={{background:"#FFF9E6",border:`2px solid ${AMBER}`,borderRadius:12,padding:13,marginBottom:10,display:"flex",gap:10,alignItems:"flex-start"}}>
+            <span style={{fontSize:22,flexShrink:0}}>📋</span>
+            <div>
+              <p style={{color:"#7A5A00",fontWeight:700,fontSize:13,margin:"0 0 3px"}}>Ordonnance requise</p>
+              <p style={{color:"#7A5A00",fontSize:12,margin:0,lineHeight:1.5}}>Certains articles nécessitent une ordonnance médicale.</p>
+            </div>
+          </div>
+        )}
+        {cart.map(item=>(
+          <div key={item.id} style={{background:W,borderRadius:13,padding:13,marginBottom:9,display:"flex",gap:11,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{width:46,height:46,borderRadius:10,background:GBG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{item.emoji}</div>
+            <div style={{flex:1}}>
+              <p style={{color:TXT,fontWeight:700,fontSize:13,margin:"0 0 2px"}}>{item.nom||item.name}</p>
+              <p style={{color:GD,fontWeight:800,fontSize:13,margin:"0 0 9px"}}>{fmt(item.prix||item.price)}</p>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{display:"flex",alignItems:"center",background:BG,borderRadius:7,overflow:"hidden"}}>
+                  <button onClick={()=>onQty(item.id,item.qty-1)} style={{background:"none",border:"none",width:32,height:32,cursor:"pointer",fontWeight:700,fontSize:16,color:TXT}}>−</button>
+                  <span style={{width:28,textAlign:"center",fontWeight:700,color:TXT,fontSize:14}}>{item.qty}</span>
+                  <button onClick={()=>onQty(item.id,item.qty+1)} style={{background:"none",border:"none",width:32,height:32,cursor:"pointer",fontWeight:700,fontSize:16,color:G}}>+</button>
+                </div>
+                <button onClick={()=>onRemove(item.id)} style={{background:"none",border:"none",color:RED,cursor:"pointer",fontSize:19,padding:4}}>🗑️</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{position:"fixed",bottom:64,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,padding:"13px 18px",background:W,borderTop:"1px solid #E8EDE9"}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{color:TXTS,fontSize:13}}>Sous-total</span><span style={{color:TXT,fontWeight:700,fontSize:13}}>{fmt(subtotal)}</span></div>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:10,paddingBottom:10,borderBottom:"1px solid #E8EDE9"}}><span style={{color:TXTS,fontSize:13}}>Livraison</span><span style={{color:G,fontWeight:700,fontSize:13}}>{fmt(delivFee)}</span></div>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}><span style={{color:TXT,fontWeight:800,fontSize:15}}>Total</span><span style={{color:GD,fontWeight:900,fontSize:17}}>{fmt(subtotal+delivFee)}</span></div>
+        <button onClick={onCheckout} style={{width:"100%",background:G,color:W,border:"none",borderRadius:13,padding:14,fontWeight:800,cursor:"pointer",fontSize:15}}>Commander · {fmt(subtotal+delivFee)}</button>
+      </div>
+    </div>
+  );
+}
 
-  const sous_total=panier.reduce((s,i)=>s+i.prix*i.qte,0);
-  const frais=livraison==="yango"?800:500;
-  const total=sous_total+frais;
-  const valide=form.nom&&form.tel&&form.adresse&&paiement;
+function Checkout({cart,subtotal,delivFee,form,setForm,onConfirm}){
+  const set=(k,v)=>setForm(p=>({...p,[k]:v}));
+  const insurer=ASSURANCES.find(a=>a.id===form.insurer);
+  const insAmt=form.payment==="assurance"&&insurer?Math.round(subtotal*insurer.cover/100):0;
+  const toPay=subtotal+delivFee-insAmt;
+  const valid=form.name.trim()&&form.phone.trim().length>=8&&form.address.trim();
+  const PMODES=[
+    {id:"wave",lb:"Wave CI",logo:<LogoWave/>,desc:"Paiement mobile instantané"},
+    {id:"orange",lb:"Orange Money",logo:<LogoOrange/>,desc:"Avec votre numéro Orange CI"},
+    {id:"cinetpay",lb:"CinetPay / Carte",logo:<LogoCinetPay/>,desc:"Visa, Mastercard, Maestro"},
+    {id:"cash",lb:"Cash à la livraison",logo:<LogoCash/>,desc:"Payer directement le livreur"},
+    {id:"assurance",lb:"Assurance maladie",logo:<LogoInsurance/>,desc:"CNAM, MUGEF-CI, AMU..."},
+  ];
+  return(
+    <div style={{padding:"14px 14px 200px"}}>
+      <h3 style={{color:TXT,fontWeight:800,fontSize:14,marginBottom:11}}>Mode de livraison</h3>
+      <div style={{display:"flex",gap:10,marginBottom:20}}>
+        {[{id:"std",icon:<span style={{fontSize:26}}>🛵</span>,lb:"SantéExpress",fee:DELIV_STD,sub:"30–45 min"},{id:"yango",icon:<LogoYango/>,lb:"Yango Delivery",fee:DELIV_YANGO,sub:"45–60 min"}].map(({id,icon,lb,fee,sub})=>(
+          <button key={id} onClick={()=>set("delivMode",id)} style={{flex:1,background:W,border:`2px solid ${form.delivMode===id?G:"#E0E8E3"}`,borderRadius:13,padding:"13px 8px",textAlign:"center",cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{marginBottom:6}}>{icon}</div>
+            <p style={{color:TXT,fontWeight:700,fontSize:12,margin:"0 0 2px"}}>{lb}</p>
+            <p style={{color:G,fontWeight:800,fontSize:12,margin:"0 0 2px"}}>{fmt(fee)}</p>
+            <p style={{color:TXTS,fontSize:10,margin:0}}>{sub}</p>
+          </button>
+        ))}
+      </div>
+      <h3 style={{color:TXT,fontWeight:800,fontSize:14,marginBottom:11}}>Mode de paiement</h3>
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:18}}>
+        {PMODES.map(({id,lb,logo,desc})=>(
+          <button key={id} onClick={()=>set("payment",id)} style={{background:W,border:`2px solid ${form.payment===id?G:"#E8EDE9"}`,borderRadius:13,padding:"11px 13px",display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left"}}>
+            <div style={{flexShrink:0}}>{logo}</div>
+            <div style={{flex:1}}><p style={{color:TXT,fontWeight:700,fontSize:13,margin:"0 0 2px"}}>{lb}</p><p style={{color:TXTS,fontSize:11,margin:0}}>{desc}</p></div>
+            <div style={{width:20,height:20,borderRadius:"50%",border:`2px solid ${form.payment===id?G:"#DDD"}`,background:form.payment===id?G:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              {form.payment===id&&<div style={{width:8,height:8,background:W,borderRadius:"50%"}}/>}
+            </div>
+          </button>
+        ))}
+      </div>
+      {form.payment==="assurance"&&(
+        <div style={{background:"#F0EEFF",border:"1px solid #C5BAF5",borderRadius:13,padding:15,marginBottom:18}}>
+          <p style={{color:PURPLE,fontWeight:700,fontSize:13,marginBottom:11}}>🛡️ Sélectionnez votre assurance</p>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:13}}>
+            {ASSURANCES.map(a=>(
+              <button key={a.id} onClick={()=>set("insurer",a.id)} style={{background:form.insurer===a.id?a.clr:W,color:form.insurer===a.id?W:TXT,border:`2px solid ${form.insurer===a.id?a.clr:"#E8EDE9"}`,borderRadius:10,padding:"10px 7px",cursor:"pointer",fontWeight:700,fontSize:12,textAlign:"center"}}>
+                <p style={{margin:"0 0 2px"}}>{a.name}</p><p style={{margin:0,fontSize:10,fontWeight:400,opacity:0.85}}>{a.cover}% couvert</p>
+              </button>
+            ))}
+          </div>
+          <label style={{color:TXTS,fontSize:12,fontWeight:600,marginBottom:5,display:"block"}}>N° immatriculation</label>
+          <input value={form.insurerCard||""} onChange={e=>set("insurerCard",e.target.value)} placeholder="Ex: CNAM-CI-XXXXXXXX"
+            style={{width:"100%",border:`2px solid ${form.insurerCard?"#9B8FE0":"#C5BAF5"}`,borderRadius:9,padding:"11px 12px",fontSize:14,outline:"none",color:TXT,background:W,boxSizing:"border-box"}}/>
+          {insurer&&insAmt>0&&(
+            <div style={{marginTop:11,background:W,borderRadius:9,padding:11}}>
+              <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:"1px solid #EEE"}}>
+                <span style={{color:TXT,fontWeight:700,fontSize:13}}>Votre ticket modérateur</span>
+                <span style={{color:RED,fontWeight:800,fontSize:14}}>{fmt(subtotal-insAmt)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      <h3 style={{color:TXT,fontWeight:800,fontSize:14,marginBottom:11}}>Informations de livraison</h3>
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {[{k:"name",lb:"👤 Nom complet",ph:"Koné Amadou",t:"text"},{k:"phone",lb:"📱 Téléphone",ph:"+225 07 XX XX XX XX",t:"tel"},{k:"address",lb:"📍 Adresse de livraison",ph:"Quartier, rue, repère...",t:"text"}].map(({k,lb,ph,t})=>(
+          <div key={k}>
+            <label style={{color:TXTS,fontSize:12,fontWeight:600,marginBottom:5,display:"block"}}>{lb}</label>
+            <input type={t} value={form[k]||""} onChange={e=>set(k,e.target.value)} placeholder={ph}
+              style={{width:"100%",border:`2px solid ${form[k]?G:"#E0E8E3"}`,borderRadius:10,padding:"11px 13px",fontSize:14,outline:"none",color:TXT,background:W,boxSizing:"border-box"}}/>
+          </div>
+        ))}
+        <div>
+          <label style={{color:TXTS,fontSize:12,fontWeight:600,marginBottom:5,display:"block"}}>📝 Note au pharmacien <span style={{fontWeight:400}}>(optionnel)</span></label>
+          <textarea value={form.note||""} onChange={e=>set("note",e.target.value)} placeholder="Allergies, grossesse..." rows={2}
+            style={{width:"100%",border:"2px solid #E0E8E3",borderRadius:10,padding:"11px 13px",fontSize:13,outline:"none",color:TXT,background:W,boxSizing:"border-box",resize:"none"}}/>
+        </div>
+      </div>
+      <div style={{background:W,borderRadius:13,padding:13,marginTop:16,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+        {cart.map(i=>(
+          <div key={i.id} style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+            <span style={{color:TXTS,fontSize:12}}>{i.nom||i.name} ×{i.qty}</span>
+            <span style={{color:TXT,fontWeight:600,fontSize:12}}>{fmt((i.prix||i.price)*i.qty)}</span>
+          </div>
+        ))}
+        {insAmt>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={{color:G,fontSize:12}}>Assurance</span><span style={{color:G,fontWeight:700,fontSize:12}}>−{fmt(insAmt)}</span></div>}
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={{color:TXTS,fontSize:12}}>Livraison</span><span style={{color:TXT,fontWeight:600,fontSize:12}}>{fmt(delivFee)}</span></div>
+        <div style={{borderTop:"1px solid #E8EDE9",paddingTop:8,marginTop:6,display:"flex",justifyContent:"space-between"}}>
+          <span style={{color:TXT,fontWeight:800,fontSize:14}}>Total à payer</span>
+          <span style={{color:GD,fontWeight:900,fontSize:16}}>{fmt(toPay)}</span>
+        </div>
+      </div>
+      <div style={{position:"fixed",bottom:64,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,padding:"13px 18px",background:W,borderTop:"1px solid #E8EDE9",boxShadow:"0 -4px 20px rgba(0,0,0,0.08)"}}>
+        <button onClick={onConfirm} disabled={!valid}
+          style={{width:"100%",background:valid?G:"#C5D9CC",color:W,border:"none",borderRadius:13,padding:14,fontWeight:800,cursor:valid?"pointer":"not-allowed",fontSize:15}}>
+          {valid?`✓ Commander · ${fmt(toPay)}`:"Remplissez les champs requis"}
+        </button>
+      </div>
+    </div>
+  );
+}
 
-  const ETAPES=["🛰️ Localisation en cours...","🔍 Recherche des pharmacies ouvertes...","📦 Vérification des stocks...","✅ Pharmacie trouvée !"];
+function Tracking({order,onRate}){
+  const isDelivered=order.status==="delivered";
+  const [step,setStep]=useState(isDelivered?4:1);
+  useEffect(()=>{
+    if(step<4){const t=setTimeout(()=>setStep(s=>s+1),3500);return()=>clearTimeout(t);}
+  },[step]);
+  const STEPS=[{ic:"✅",lb:"Commande confirmée",sub:"Reçue par la pharmacie"},{ic:"💊",lb:"Préparation en cours",sub:"Le pharmacien prépare votre sac"},{ic:"🛵",lb:"Livreur en route",sub:"Votre commande est en chemin"},{ic:"🏠",lb:"Livraison effectuée",sub:"Votre commande est arrivée !"}];
+  const PAY_LBL={wave:"Wave CI",orange:"Orange Money",cinetpay:"CinetPay",cash:"Cash",assurance:"Assurance"};
+  return(
+    <div style={{padding:"16px 16px",paddingBottom:80}}>
+      <div style={{background:W,borderRadius:13,padding:13,marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+        <div><p style={{color:TXTS,fontSize:10,fontWeight:700,margin:"0 0 3px",letterSpacing:1}}>COMMANDE</p><p style={{color:TXT,fontWeight:800,fontSize:16,margin:0}}>#{order.id}</p></div>
+        <div style={{textAlign:"right"}}><p style={{color:TXTS,fontSize:11,margin:"0 0 3px"}}>{order.date}</p><p style={{color:GD,fontWeight:800,fontSize:14,margin:0}}>{fmt(order.total)}</p></div>
+      </div>
+      <div style={{background:W,borderRadius:13,padding:"16px 16px",marginBottom:14,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+        {STEPS.map((s,i)=>{
+          const done=step>i,active=step===i+1;
+          return(
+            <div key={i} style={{display:"flex",gap:14,marginBottom:i<3?18:0}}>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0}}>
+                <div style={{width:38,height:38,borderRadius:"50%",background:done?G:(active?"#FFF9E6":BG),border:active?`2px solid ${AMBER}`:done?`2px solid ${G}`:"2px solid #E0E8E3",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,transition:"all 0.4s"}}>
+                  <span style={{opacity:done||active?1:0.35}}>{s.ic}</span>
+                </div>
+                {i<3&&<div style={{width:2,height:24,background:done?G:"#E0E8E3",marginTop:3,transition:"background 0.4s"}}/>}
+              </div>
+              <div style={{paddingTop:7}}>
+                <p style={{color:done?TXT:(active?AMBER:TXTS),fontWeight:done||active?700:400,fontSize:13,margin:"0 0 2px"}}>{s.lb}</p>
+                <p style={{color:done?G:(active?AMBER:TXTS),fontSize:11,margin:0}}>{s.sub}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{background:W,borderRadius:13,padding:13,marginBottom:12,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+        {[["📍",order.address||"Adresse de livraison"],["🏪",order.pharmacy||"Pharmacie partenaire"],["💳",PAY_LBL[order.payment]||"Cash"]].map(([ic,v])=>(
+          <div key={v} style={{display:"flex",gap:9,marginBottom:7}}><span style={{fontSize:14}}>{ic}</span><span style={{color:TXT,fontSize:13,fontWeight:600}}>{v}</span></div>
+        ))}
+      </div>
+      {(step===4||isDelivered)&&!order.rating&&(
+        <div style={{background:`linear-gradient(135deg,${G},${GD})`,borderRadius:13,padding:16,textAlign:"center"}}>
+          <p style={{color:W,fontWeight:700,fontSize:14,marginBottom:8}}>🌟 Commande livrée ! Merci</p>
+          <p style={{color:GL,fontSize:12,marginBottom:14}}>Notez votre pharmacien et votre livreur</p>
+          <button onClick={onRate} style={{background:W,color:G,border:"none",borderRadius:10,padding:"10px 24px",fontWeight:800,cursor:"pointer",fontSize:14}}>Laisser un avis ⭐</button>
+        </div>
+      )}
+      {order.rating&&<div style={{background:GBG,borderRadius:13,padding:13,textAlign:"center"}}><p style={{color:GD,fontWeight:700,fontSize:13}}>Merci pour votre avis · {"⭐".repeat(order.rating)}</p></div>}
+    </div>
+  );
+}
 
-  async function commander(){
-    if(!valide)return;
-    setLoading(true);
-    for(let i=0;i<ETAPES.length;i++){
-      await new Promise(r=>setTimeout(r,900));
-      setEtape(i+1);
-    }
-    await new Promise(r=>setTimeout(r,600));
-    const ref="SE-"+String(Math.floor(Math.random()*9000)+1000);
-    const cmd={id:ref,date:new Date().toISOString().split("T")[0],statut:"confirmee",total,pharmacie:"Pharmacie Centrale du Plateau",items:panier.map(i=>({nom:i.nom,qte:i.qte,prix:i.prix})),nom:form.nom,tel:form.tel,adresse:form.adresse,paiement,livraison};
-    setCommandeActive(cmd);
-    setPanier([]);
-    setPage("suivi");
-  }
-
-  if(loading)return(
-    <div style={{padding:40,textAlign:"center"}}>
-      <div style={{fontSize:64,marginBottom:16}}>🏥</div>
-      <h2 style={{color:TXT,marginBottom:24}}>Affectation en cours</h2>
-      {ETAPES.map((e,i)=>(
-        <div key={i} style={{display:"flex",alignItems:"center",gap:12,marginBottom:12,opacity:etape>i?1:0.3}}>
-          <span style={{fontSize:20}}>{etape>i?"✅":"⏳"}</span>
-          <span style={{fontWeight:etape===i+1?700:400,color:etape>i?TXT:TXTS}}>{e}</span>
+function History({orders,onOpen,onRate}){
+  const STA={confirmed:"En cours 🔄",delivering:"En livraison 🛵",delivered:"Livré ✅",cancelled:"Annulé ❌"};
+  const STAC={confirmed:AMBER,delivering:WAVE_C,delivered:G,cancelled:RED};
+  if(!orders.length) return(
+    <div style={{textAlign:"center",padding:"70px 22px"}}>
+      <div style={{fontSize:68}}>📋</div>
+      <h3 style={{color:TXT,fontWeight:800,marginTop:14,marginBottom:8}}>Aucune commande</h3>
+      <p style={{color:TXTS,fontSize:13}}>Vos commandes apparaîtront ici</p>
+    </div>
+  );
+  return(
+    <div style={{padding:"13px 14px 80px"}}>
+      {orders.map(o=>(
+        <div key={o.id} onClick={()=>onOpen(o)} style={{background:W,borderRadius:13,padding:14,marginBottom:10,boxShadow:"0 2px 8px rgba(0,0,0,0.06)",cursor:"pointer"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+            <span style={{color:TXT,fontWeight:800,fontSize:14}}>#{o.id}</span>
+            <span style={{color:STAC[o.status]||AMBER,fontWeight:700,fontSize:12}}>{STA[o.status]||o.status}</span>
+          </div>
+          <p style={{color:TXTS,fontSize:12,margin:"0 0 6px"}}>{o.date} · {o.pharmacy||"Pharmacie"}</p>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{color:GD,fontWeight:800,fontSize:14}}>{fmt(o.total)}</span>
+            {o.status==="delivered"&&!o.rating&&(
+              <button onClick={e=>{e.stopPropagation();onRate(o);}} style={{background:GBG,border:"none",borderRadius:8,padding:"5px 10px",color:GD,fontWeight:700,cursor:"pointer",fontSize:11}}>⭐ Noter</button>
+            )}
+          </div>
         </div>
       ))}
-      <button style={{...S.btn,width:"100%",marginTop:24,opacity:0.5}} disabled>Commander · {total.toLocaleString()} FCFA</button>
-    </div>
-  );
-
-  return(
-    <div style={{padding:"16px 16px 160px"}}>
-      <h2 style={{...S.h2,marginBottom:20}}>Paiement</h2>
-
-      <div style={{...S.card,marginBottom:16}}>
-        <p style={{fontWeight:700,marginBottom:12,margin:"0 0 12px"}}>Mode de paiement</p>
-        {[["wave","Wave CI","Instantané","#1a73e8"],["om","Orange Money","Mobile Money","#ff6600"],["cinetpay","Visa/Mastercard","CinetPay","#6c3bc2"],["cash","Cash à la livraison","Payer le livreur","#2e7d32"],["assurance","Assurance maladie","CNAM, MUGEF-CI, AMU...","#1565c0"]].map(([id,nom,sub,color])=>(
-          <div key={id} onClick={()=>setPaiement(id)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid #F0F4F1",cursor:"pointer"}}>
-            <div style={{width:40,height:40,borderRadius:10,background:color,display:"flex",alignItems:"center",justifyContent:"center",color:W,fontWeight:900,fontSize:12,flexShrink:0}}>
-              {id==="wave"?"W":id==="om"?"OM":id==="cinetpay"?"CP":id==="cash"?"$":"🛡️"}
-            </div>
-            <div style={{flex:1}}><div style={{fontWeight:700}}>{nom}</div><div style={{fontSize:12,color:TXTS}}>{sub}</div></div>
-            <div style={{width:20,height:20,borderRadius:"50%",border:`2px solid ${paiement===id?G:"#D4E8DC"}`,background:paiement===id?G:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              {paiement===id&&<div style={{width:8,height:8,borderRadius:"50%",background:W}}/>}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{...S.card,marginBottom:16}}>
-        <p style={{fontWeight:700,margin:"0 0 12px"}}>Mode de livraison</p>
-        {[["std","SantéExpress","Livraison standard","500 FCFA"],["yango","Yango","Via l'app Yango","800 FCFA"]].map(([id,nom,sub,prix])=>(
-          <div key={id} onClick={()=>setLivraison(id)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid #F0F4F1",cursor:"pointer"}}>
-            <span style={{fontSize:24}}>{id==="std"?"🛵":"🚗"}</span>
-            <div style={{flex:1}}><div style={{fontWeight:700}}>{nom}</div><div style={{fontSize:12,color:TXTS}}>{sub}</div></div>
-            <div style={{fontWeight:700,color:G,marginRight:10}}>{prix}</div>
-            <div style={{width:20,height:20,borderRadius:"50%",border:`2px solid ${livraison===id?G:"#D4E8DC"}`,background:livraison===id?G:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              {livraison===id&&<div style={{width:8,height:8,borderRadius:"50%",background:W}}/>}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={S.card}>
-        <p style={{fontWeight:700,margin:"0 0 16px"}}>Informations de livraison</p>
-        {[["nom","👤 Nom complet","Koné Amadou"],["tel","📱 Téléphone","+225 07 XX XX XX XX"],["adresse","📍 Adresse de livraison","Quartier, rue, repère..."],["note","📝 Note au pharmacien (optionnel)","Allergies, grossesse..."]].map(([k,label,ph])=>(
-          <div key={k} style={{marginBottom:14}}>
-            <label style={S.label}>{label}</label>
-            {k==="note"
-              ?<textarea value={form[k]} onChange={e=>setForm(f=>({...f,[k]:e.target.value}))} placeholder={ph} style={{...S.input,height:70,resize:"none"}}/>
-              :<input value={form[k]} onChange={e=>setForm(f=>({...f,[k]:e.target.value}))} placeholder={ph} style={S.input} type={k==="tel"?"tel":"text"}/>
-            }
-          </div>
-        ))}
-      </div>
-
-      <div style={{position:"fixed",bottom:70,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:448,padding:"12px 0"}}>
-        <button style={{...S.btn,width:"100%",padding:16,fontSize:16,borderRadius:12,opacity:valide?1:0.5}} onClick={commander} disabled={!valide}>
-          {valide?"✓ Commander · "+total.toLocaleString()+" FCFA":"Remplissez les champs requis"}
-        </button>
-      </div>
     </div>
   );
 }
 
-// ══════════════════════════════════════════
-// PAGE SUIVI COMMANDE
-// ══════════════════════════════════════════
-function PageSuivi({commande,setPage}){
-  const [statut,setStatut]=useState(1);
-  useEffect(()=>{
-    const t=setInterval(()=>setStatut(s=>s<3?s+1:s),4000);
-    return()=>clearInterval(t);
-  },[]);
-
-  if(!commande)return(
-    <div style={{padding:40,textAlign:"center"}}>
-      <p style={{color:TXTS}}>Aucune commande en cours</p>
-      <button style={{...S.btn,marginTop:16}} onClick={()=>setPage("accueil")}>Retour</button>
-    </div>
-  );
-
-  const ETAPES=[
-    {icon:"✅",titre:"Commande confirmée",desc:"Reçue par la pharmacie"},
-    {icon:"💊",titre:"Préparation en cours",desc:"Le pharmacien prépare votre sac"},
-    {icon:"🛵",titre:"Livreur en route",desc:"Votre commande est en chemin"},
-    {icon:"🏠",titre:"Livraison effectuée",desc:"Votre commande est arrivée !"},
-  ];
-
+function Rating({order,onDone}){
+  const [stars,setStars]=useState(0);
+  const [hover,setHover]=useState(0);
   return(
-    <div style={{padding:"16px 16px 100px"}}>
-      <div style={{...S.card,background:`linear-gradient(135deg,${GD},${G})`,padding:20,marginBottom:16}}>
-        <div style={{color:GL,fontSize:13,marginBottom:4}}>Référence commande</div>
-        <div style={{color:W,fontWeight:900,fontSize:20}}>{commande.id}</div>
-        <div style={{color:GL,fontSize:13,marginTop:8}}>Total : {commande.total?.toLocaleString()} FCFA</div>
+    <div style={{padding:"30px 22px"}}>
+      <div style={{textAlign:"center",marginBottom:30}}>
+        <div style={{fontSize:56,marginBottom:12}}>⭐</div>
+        <h2 style={{color:TXT,fontWeight:900,marginBottom:6}}>Votre avis</h2>
+        <p style={{color:TXTS,fontSize:13}}>Commande #{order.id}</p>
       </div>
-
-      <div style={S.card}>
-        {ETAPES.map((e,i)=>(
-          <div key={i} style={{display:"flex",gap:14,marginBottom:i<ETAPES.length-1?16:0}}>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
-              <div style={{width:40,height:40,borderRadius:"50%",background:statut>i?G:statut===i?"#FFF3E0":"#F0F4F1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,border:`2px solid ${statut>i?G:statut===i?WARN:"#D4E8DC"}`}}>
-                {statut>i?e.icon:statut===i?"⏳":"⬜"}
-              </div>
-              {i<ETAPES.length-1&&<div style={{width:2,height:20,background:statut>i?G:"#E8ECE9",margin:"4px 0"}}/>}
-            </div>
-            <div style={{paddingTop:8}}>
-              <div style={{fontWeight:700,color:statut>i?TXT:TXTS}}>{e.titre}</div>
-              <div style={{fontSize:13,color:TXTS}}>{e.desc}</div>
-            </div>
-          </div>
+      <div style={{display:"flex",justifyContent:"center",gap:12,marginBottom:30}}>
+        {[1,2,3,4,5].map(i=>(
+          <button key={i} onClick={()=>setStars(i)} onMouseEnter={()=>setHover(i)} onMouseLeave={()=>setHover(0)}
+            style={{background:"none",border:"none",fontSize:42,cursor:"pointer",transition:"transform 0.1s",transform:(hover||stars)>=i?"scale(1.15)":"scale(1)"}}>
+            {(hover||stars)>=i?"⭐":"☆"}
+          </button>
         ))}
       </div>
-
-      <div style={S.card}>
-        {[["📍",commande.adresse||"Yopougon"],["🏥",commande.pharmacie||"Pharmacie Centrale"],["💳",commande.paiement||"Wave CI"]].map(([icon,val])=>(
-          <div key={val} style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
-            <span style={{fontSize:18}}>{icon}</span><span style={{fontWeight:600}}>{val}</span>
-          </div>
-        ))}
-      </div>
-
-      <button style={{...S.btn,width:"100%",marginTop:8}} onClick={()=>setPage("commandes")}>
-        Voir mes commandes
+      <button onClick={()=>stars>0&&onDone(stars)} disabled={stars===0}
+        style={{width:"100%",background:stars>0?G:"#CCC",color:W,border:"none",borderRadius:13,padding:15,fontWeight:800,cursor:stars>0?"pointer":"not-allowed",fontSize:15}}>
+        {stars>0?`Envoyer mon avis (${stars} étoile${stars>1?"s":""})`:"Sélectionnez une note"}
       </button>
     </div>
   );
 }
 
-// ══════════════════════════════════════════
-// PAGE COMMANDES
-// ══════════════════════════════════════════
-function PageCommandes({commandeActive}){
-  const [cmds]=useState([...(commandeActive?[commandeActive]:[]),...COMMANDES_DEMO]);
-  const STATUTS={confirmee:{label:"Confirmée",color:INFO,bg:"#E3F2FD"},en_cours:{label:"En cours",color:WARN,bg:"#FFF3E0"},livree:{label:"Livrée",color:G,bg:GL},annulee:{label:"Annulée",color:ERR,bg:"#FFEBEE"}};
-
+function Livreur({orders}){
+  const active=orders.filter(o=>o.status==="confirmed"||o.status==="delivering");
   return(
-    <div style={{padding:"16px 16px 80px"}}>
-      <h2 style={S.h2}>Mes commandes</h2>
-      {cmds.length===0&&<div style={{textAlign:"center",padding:40,color:TXTS}}>Aucune commande</div>}
-      {cmds.map(cmd=>{
-        const st=STATUTS[cmd.statut]||STATUTS.confirmee;
-        return(
-          <div key={cmd.id} style={S.card}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <span style={{fontWeight:800,color:G}}>{cmd.id}</span>
-              <Badge color={st.color} bg={st.bg}>{st.label}</Badge>
+    <div style={{padding:"16px 16px 40px"}}>
+      <div style={{background:`linear-gradient(135deg,${G},${GD})`,borderRadius:16,padding:18,marginBottom:16,color:W}}>
+        <h2 style={{fontWeight:900,fontSize:20,margin:"0 0 5px"}}>🛵 Espace Livreur</h2>
+        <p style={{fontSize:13,opacity:0.8,margin:0}}>{active.length} livraison{active.length!==1?"s":""} en attente</p>
+      </div>
+      {active.length===0
+        ?<div style={{textAlign:"center",padding:"40px 0",color:TXTS}}><div style={{fontSize:48}}>✅</div><p style={{fontWeight:600,marginTop:12}}>Aucune livraison en attente</p></div>
+        :active.map(o=>(
+          <div key={o.id} style={{background:W,borderRadius:13,padding:14,marginBottom:10,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+              <span style={{color:TXT,fontWeight:800}}>#{o.id}</span>
+              <span style={{color:GD,fontWeight:700}}>{fmt(o.total)}</span>
             </div>
-            <div style={{fontSize:13,color:TXTS,marginBottom:8}}>📅 {cmd.date} · 🏥 {cmd.pharmacie}</div>
-            {cmd.items?.map((it,i)=>(
-              <div key={i} style={{fontSize:13,color:TXT,marginBottom:2}}>· {it.nom} ×{it.qte} — {(it.prix*it.qte).toLocaleString()} FCFA</div>
-            ))}
-            <div style={{fontWeight:800,color:G,marginTop:8,fontSize:16}}>Total : {cmd.total?.toLocaleString()} FCFA</div>
+            <p style={{color:TXTS,fontSize:12,margin:"0 0 8px"}}>📍 {o.address||"Adresse non renseignée"}</p>
+            <button style={{background:G,color:W,border:"none",borderRadius:9,padding:"8px 16px",fontWeight:700,cursor:"pointer",fontSize:13}}>Accepter la livraison</button>
           </div>
-        );
-      })}
+        ))
+      }
     </div>
   );
 }
 
-// ══════════════════════════════════════════
-// ESPACE PHARMACIE
-// ══════════════════════════════════════════
-function PagePharmacie(){
-  const [sousPage,setSousPage]=useState("accueil");
-  const [form,setForm]=useState({nom:"",responsable:"",tel:"",email:"",adresse:"",commune:""});
-  const [connecte,setConnecte]=useState(false);
-  const [loginForm,setLoginForm]=useState({email:"",pwd:""});
-  const [stocks,setStocks]=useState(MEDICAMENTS.slice(0,8).map(m=>({...m,stock:Math.floor(Math.random()*100)+10})));
-  const [toast,setToast]=useState(null);
-
-  const CMDS_PHARMACIE=[
-    {id:"SE-0042",client:"Koné Amadou",items:"Paracétamol x2, Vitamine C x1",total:2200,statut:"en_attente",tel:"+225 07 12 34 56"},
-    {id:"SE-0041",client:"Traoré Fatou",items:"Ibuprofène x1",total:850,statut:"en_cours",tel:"+225 05 98 76 54"},
-    {id:"SE-0040",client:"Coulibaly Jean",items:"Doliprane x3, Zinc x1",total:5350,statut:"livree",tel:"+225 01 23 45 67"},
-  ];
-
-  if(!connecte){
-    if(sousPage==="rejoindre")return(
-      <div style={{padding:"16px 16px 80px"}}>
-        {toast&&<Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
-        <button style={{...S.btnGray,marginBottom:16}} onClick={()=>setSousPage("accueil")}>← Retour</button>
-        <h2 style={S.h2}>Rejoindre SantéExpress</h2>
-        <div style={S.card}>
-          {[["nom","Nom de la pharmacie","Pharmacie Centrale"],["responsable","Responsable","Dr. Koné"],["tel","Téléphone","+225 27 XX XX XX XX"],["email","Email","contact@pharmacie.ci"],["adresse","Adresse","Quartier, rue, commune"],["commune","Commune","Cocody"]].map(([k,label,ph])=>(
-            <div key={k} style={{marginBottom:14}}>
-              <label style={S.label}>{label}</label>
-              <input value={form[k]} onChange={e=>setForm(f=>({...f,[k]:e.target.value}))} placeholder={ph} style={S.input}/>
-            </div>
-          ))}
-          <button style={{...S.btn,width:"100%",marginTop:8}} onClick={()=>{setToast({msg:"Demande envoyée ! Nous vous contacterons sous 24h.",type:"success"});setTimeout(()=>setSousPage("accueil"),2000);}}>
-            Envoyer ma demande
-          </button>
-        </div>
-      </div>
-    );
-
-    if(sousPage==="login")return(
-      <div style={{padding:"16px 16px 80px"}}>
-        <button style={{...S.btnGray,marginBottom:16}} onClick={()=>setSousPage("accueil")}>← Retour</button>
-        <h2 style={S.h2}>Connexion Pharmacie</h2>
-        <div style={S.card}>
-          <div style={{marginBottom:14}}>
-            <label style={S.label}>Email</label>
-            <input value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))} placeholder="contact@pharmacie.ci" style={S.input}/>
-          </div>
-          <div style={{marginBottom:20}}>
-            <label style={S.label}>Mot de passe</label>
-            <input value={loginForm.pwd} onChange={e=>setLoginForm(f=>({...f,pwd:e.target.value}))} placeholder="••••••••" style={S.input} type="password"/>
-          </div>
-          <button style={{...S.btn,width:"100%"}} onClick={()=>setConnecte(true)}>Se connecter</button>
-          <p style={{textAlign:"center",fontSize:12,color:TXTS,marginTop:12}}>Démo : cliquez directement sur Se connecter</p>
-        </div>
-      </div>
-    );
-
-    return(
-      <div style={{padding:"16px 16px 80px"}}>
-        <div style={{...S.card,background:`linear-gradient(135deg,${GD},${G})`,padding:24,textAlign:"center",marginBottom:20}}>
-          <div style={{fontSize:48,marginBottom:12}}>🏥</div>
-          <h2 style={{color:W,margin:"0 0 8px"}}>Espace Pharmacie</h2>
-          <p style={{color:GL,fontSize:14,margin:"0 0 20px"}}>Rejoignez le réseau SantéExpress</p>
-          <button style={{...S.btn,background:W,color:G,width:"100%",marginBottom:10}} onClick={()=>setSousPage("rejoindre")}>Demander à rejoindre</button>
-          <button style={{...S.btn,background:"rgba(255,255,255,0.2)",color:W,width:"100%"}} onClick={()=>setSousPage("login")}>Déjà partenaire ? Se connecter</button>
-        </div>
-        {[["💊","Gestion des stocks","Gérez vos produits en temps réel"],["📦","Réception des commandes","Recevez et préparez les commandes clients"],["📊","Tableau de bord","Suivez vos ventes et performances"],["💳","Paiements sécurisés","Commission de 3% seulement"]].map(([e,t,d])=>(
-          <div key={t} style={{...S.card,display:"flex",gap:14,alignItems:"center"}}>
-            <span style={{fontSize:28}}>{e}</span>
-            <div><div style={{fontWeight:700}}>{t}</div><div style={{fontSize:13,color:TXTS}}>{d}</div></div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // DASHBOARD PHARMACIE CONNECTÉE
+function Admin({orders,pharmacies}){
+  const total=orders.reduce((s,o)=>s+o.total,0);
+  const commission=Math.round(total*0.03);
   return(
-    <div style={{paddingBottom:80}}>
-      {toast&&<Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
-      <div style={{background:`linear-gradient(135deg,${GD},${G})`,padding:"16px",color:W,marginBottom:0}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div><div style={{fontSize:12,opacity:0.8}}>Connecté</div><div style={{fontWeight:800,fontSize:16}}>Pharmacie Centrale du Plateau</div></div>
-          <button style={{background:"rgba(255,255,255,0.2)",border:"none",color:W,padding:"6px 12px",borderRadius:8,cursor:"pointer",fontSize:12}} onClick={()=>setConnecte(false)}>Déconnexion</button>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginTop:16}}>
-          {[["12","Commandes\naujourd'hui"],["247","Produits\nen stock"],["84500","CA\nFCFA"],["3","En\nattente"]].map(([v,l])=>(
-            <div key={l} style={{background:"rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 6px",textAlign:"center"}}>
-              <div style={{fontWeight:900,fontSize:16,color:GL}}>{v}</div>
-              <div style={{fontSize:10,opacity:0.8,whiteSpace:"pre-line",lineHeight:1.3}}>{l}</div>
-            </div>
-          ))}
-        </div>
+    <div style={{padding:"16px 16px 40px"}}>
+      <div style={{background:`linear-gradient(135deg,#1a1a2e,#16213e)`,borderRadius:16,padding:18,marginBottom:16,color:W}}>
+        <h2 style={{fontWeight:900,fontSize:20,margin:"0 0 5px"}}>⚙️ Administration</h2>
+        <p style={{fontSize:13,opacity:0.7,margin:0}}>Vue d'ensemble SantéExpress</p>
       </div>
-
-      <div style={{...S.tabs}}>
-        {[["commandes","📦 Commandes"],["stocks","💊 Stocks"],["stats","📊 Stats"]].map(([id,label])=>(
-          <button key={id} style={{...S.tab,...(sousPage===id||(!["commandes","stocks","stats"].includes(sousPage)&&id==="commandes")?S.tabActive:{})}} onClick={()=>setSousPage(id)}>{label}</button>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        {[[orders.length,"Commandes","📋"],[pharmacies?.length||12,"Pharmacies","🏥"],[fmt(total),"Chiffre d'affaires","💰"],[fmt(commission),"Commission (3%)","📊"]].map(([v,l,ic])=>(
+          <div key={l} style={{background:W,borderRadius:13,padding:14,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{fontSize:24,marginBottom:6}}>{ic}</div>
+            <p style={{color:TXT,fontWeight:900,fontSize:16,margin:"0 0 2px"}}>{v}</p>
+            <p style={{color:TXTS,fontSize:11,margin:0}}>{l}</p>
+          </div>
         ))}
       </div>
-
-      {(sousPage==="commandes"||!["commandes","stocks","stats"].includes(sousPage))&&(
-        <div style={{padding:"16px 16px 80px"}}>
-          <h3 style={{fontWeight:800,marginBottom:12}}>Commandes reçues</h3>
-          {CMDS_PHARMACIE.map(cmd=>{
-            const COLS={en_attente:{c:WARN,bg:"#FFF3E0",l:"En attente"},en_cours:{c:INFO,bg:"#E3F2FD",l:"En cours"},livree:{c:G,bg:GL,l:"Livrée"}};
-            const col=COLS[cmd.statut];
-            return(
-              <div key={cmd.id} style={S.card}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-                  <span style={{fontWeight:800,color:G}}>{cmd.id}</span>
-                  <Badge color={col.c} bg={col.bg}>{col.l}</Badge>
-                </div>
-                <div style={{fontWeight:600,marginBottom:4}}>👤 {cmd.client}</div>
-                <div style={{fontSize:13,color:TXTS,marginBottom:8}}>💊 {cmd.items}</div>
-                <div style={{fontWeight:800,color:G,marginBottom:10}}>{cmd.total.toLocaleString()} FCFA</div>
-                {cmd.statut==="en_attente"&&(
-                  <div style={{display:"flex",gap:8}}>
-                    <button style={{...S.btn,flex:1,padding:"10px"}} onClick={()=>setToast({msg:"Commande acceptée !",type:"success"})}>✅ Accepter</button>
-                    <button style={{...S.btnGray,flex:1,padding:"10px"}} onClick={()=>setToast({msg:"Commande refusée",type:"error"})}>❌ Refuser</button>
-                  </div>
-                )}
-                {cmd.statut==="en_cours"&&(
-                  <button style={{...S.btn,width:"100%",padding:"10px"}} onClick={()=>setToast({msg:"Commande remise au livreur !",type:"success"})}>🛵 Remettre au livreur</button>
-                )}
-              </div>
-            );
-          })}
+      <h3 style={{color:TXT,fontWeight:800,marginBottom:10}}>Dernières commandes</h3>
+      {orders.slice(0,5).map(o=>(
+        <div key={o.id} style={{background:W,borderRadius:11,padding:12,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 2px 6px rgba(0,0,0,0.05)"}}>
+          <div><p style={{color:TXT,fontWeight:700,fontSize:13,margin:"0 0 2px"}}>#{o.id}</p><p style={{color:TXTS,fontSize:11,margin:0}}>{o.date}</p></div>
+          <span style={{color:GD,fontWeight:800,fontSize:13}}>{fmt(o.total)}</span>
         </div>
-      )}
-
-      {sousPage==="stocks"&&(
-        <div style={{padding:"16px 16px 80px"}}>
-          <h3 style={{fontWeight:800,marginBottom:12}}>Gestion des stocks</h3>
-          {stocks.map(med=>(
-            <div key={med.id} style={{...S.card,display:"flex",alignItems:"center",gap:12}}>
-              <span style={{fontSize:24}}>{med.emoji}</span>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:13}}>{med.nom}</div>
-                <div style={{fontSize:12,color:TXTS}}>{med.prix.toLocaleString()} FCFA</div>
-              </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontWeight:800,color:med.stock<10?ERR:med.stock<30?WARN:G,fontSize:16}}>{med.stock}</div>
-                <div style={{fontSize:11,color:TXTS}}>en stock</div>
-              </div>
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                <button onClick={()=>setStocks(s=>s.map(m=>m.id===med.id?{...m,stock:m.stock+10}:m))} style={{width:28,height:28,background:G,border:"none",borderRadius:6,color:W,cursor:"pointer",fontWeight:800}}>+</button>
-                <button onClick={()=>setStocks(s=>s.map(m=>m.id===med.id?{...m,stock:Math.max(0,m.stock-10)}:m))} style={{width:28,height:28,background:"#F0F4F1",border:"none",borderRadius:6,cursor:"pointer",fontWeight:800}}>−</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {sousPage==="stats"&&(
-        <div style={{padding:"16px 16px 80px"}}>
-          <h3 style={{fontWeight:800,marginBottom:12}}>Statistiques du mois</h3>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-            {[["💰","Chiffre d'affaires","84 500 FCFA"],["📦","Commandes total","47"],["⭐","Note clients","4.7/5"],["🏅","Classement","#3 sur Abidjan"]].map(([e,l,v])=>(
-              <div key={l} style={{...S.statCard}}>
-                <div style={{fontSize:28,marginBottom:8}}>{e}</div>
-                <div style={{fontWeight:800,color:G,fontSize:15}}>{v}</div>
-                <div style={{fontSize:12,color:TXTS}}>{l}</div>
-              </div>
-            ))}
-          </div>
-          <div style={S.card}>
-            <p style={{fontWeight:700,margin:"0 0 12px"}}>Top médicaments vendus</p>
-            {[["Paracétamol 500mg",34],["Ibuprofène 400mg",28],["Vitamine C",22],["Doliprane",18]].map(([nom,nb])=>(
-              <div key={nom} style={{marginBottom:10}}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                  <span style={{fontSize:13,fontWeight:600}}>{nom}</span>
-                  <span style={{fontSize:13,color:G,fontWeight:700}}>{nb} ventes</span>
-                </div>
-                <div style={{height:6,background:"#E8ECE9",borderRadius:3}}>
-                  <div style={{height:"100%",background:G,borderRadius:3,width:`${(nb/34)*100}%`}}/>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      ))}
     </div>
   );
 }
 
-// ══════════════════════════════════════════
-// ESPACE LIVREUR
-// ══════════════════════════════════════════
-function PageLivreur(){
-  const [sousPage,setSousPage]=useState("accueil");
-  const [connecte,setConnecte]=useState(false);
-  const [livraisons,setLivraisons]=useState([
-    {id:"SE-0042",client:"Koné Amadou",tel:"+225 07 12 34 56",pharmacie:"Pharmacie Centrale, Plateau",adresse:"Yopougon, Maroc, Rue 12",distance:"8.4 km",montant:2200,frais:800,statut:"disponible"},
-    {id:"SE-0041",client:"Traoré Fatou",tel:"+225 05 98 76 54",pharmacie:"Pharmacie de la Paix, Yopougon",adresse:"Cocody, Riviera 2, Lot 45",distance:"5.1 km",montant:850,frais:500,statut:"disponible"},
-  ]);
-  const [toast,setToast]=useState(null);
-
-  if(!connecte){
-    if(sousPage==="inscription")return(
-      <div style={{padding:"16px 16px 80px"}}>
-        <button style={{...S.btnGray,marginBottom:16}} onClick={()=>setSousPage("accueil")}>← Retour</button>
-        <h2 style={S.h2}>Devenir livreur</h2>
-        <div style={S.card}>
-          {[["nom","Nom complet","Koné Mamadou"],["tel","Téléphone","+225 07 XX XX XX XX"],["email","Email","kone@email.com"],["transport","Moyen de transport","Moto / Voiture / Vélo"]].map(([k,label,ph])=>(
-            <div key={k} style={{marginBottom:14}}>
-              <label style={S.label}>{label}</label>
-              <input placeholder={ph} style={S.input}/>
-            </div>
-          ))}
-          <button style={{...S.btn,width:"100%",marginTop:8}} onClick={()=>{setToast({msg:"Demande envoyée ! Validation sous 24h.",type:"success"});setTimeout(()=>setSousPage("accueil"),2000);}}>
-            Envoyer ma candidature
-          </button>
-        </div>
-      </div>
-    );
-
-    return(
-      <div style={{padding:"16px 16px 80px"}}>
-        {toast&&<Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
-        <div style={{...S.card,background:`linear-gradient(135deg,#E65100,#FF6D00)`,padding:24,textAlign:"center",marginBottom:20}}>
-          <div style={{fontSize:48,marginBottom:12}}>🛵</div>
-          <h2 style={{color:W,margin:"0 0 8px"}}>Espace Livreur</h2>
-          <p style={{color:"#FFE0B2",fontSize:14,margin:"0 0 20px"}}>Gagnez de l'argent en livrant des médicaments</p>
-          <button style={{...S.btn,background:W,color:"#E65100",width:"100%",marginBottom:10}} onClick={()=>setSousPage("inscription")}>Devenir livreur</button>
-          <button style={{...S.btn,background:"rgba(255,255,255,0.2)",color:W,width:"100%"}} onClick={()=>setConnecte(true)}>Déjà livreur ? Se connecter</button>
-        </div>
-        {[["💰","Revenus attractifs","500 à 800 FCFA par livraison"],["📱","App simple","Accepte et gère tes livraisons"],["🗺️","Navigation GPS","Itinéraire optimisé automatiquement"],["⏰","Horaires flexibles","Travaille quand tu veux"]].map(([e,t,d])=>(
-          <div key={t} style={{...S.card,display:"flex",gap:14,alignItems:"center"}}>
-            <span style={{fontSize:28}}>{e}</span>
-            <div><div style={{fontWeight:700}}>{t}</div><div style={{fontSize:13,color:TXTS}}>{d}</div></div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
+function Pharmacie(){
   return(
-    <div style={{paddingBottom:80}}>
-      {toast&&<Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
-      <div style={{background:"linear-gradient(135deg,#E65100,#FF6D00)",padding:"16px",color:W}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div><div style={{fontSize:12,opacity:0.8}}>Connecté</div><div style={{fontWeight:800,fontSize:16}}>Koné Mamadou · 🛵 Moto</div></div>
-          <button style={{background:"rgba(255,255,255,0.2)",border:"none",color:W,padding:"6px 12px",borderRadius:8,cursor:"pointer",fontSize:12}} onClick={()=>setConnecte(false)}>Déco.</button>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:14}}>
-          {[["3","Livraisons\naujourd'hui"],["2 400","Revenus\nFCFA"],["4.9","Note\n/5"]].map(([v,l])=>(
-            <div key={l} style={{background:"rgba(255,255,255,0.2)",borderRadius:10,padding:"10px 6px",textAlign:"center"}}>
-              <div style={{fontWeight:900,fontSize:18,color:"#FFE0B2"}}>{v}</div>
-              <div style={{fontSize:10,opacity:0.8,whiteSpace:"pre-line",lineHeight:1.3}}>{l}</div>
-            </div>
-          ))}
-        </div>
+    <div style={{padding:"16px 16px 40px"}}>
+      <div style={{background:`linear-gradient(135deg,${G},${GD})`,borderRadius:16,padding:24,marginBottom:20,color:W,textAlign:"center"}}>
+        <div style={{fontSize:48,marginBottom:10}}>🏥</div>
+        <h2 style={{fontWeight:900,fontSize:22,margin:"0 0 8px"}}>Espace Pharmacie</h2>
+        <p style={{fontSize:14,opacity:0.85,margin:"0 0 16px"}}>Rejoignez le réseau SantéExpress</p>
+        <button style={{background:W,color:G,border:"none",borderRadius:30,padding:"12px 24px",fontWeight:800,cursor:"pointer",fontSize:14}}>Demander à rejoindre</button>
       </div>
+      {[["💊","Gestion des stocks","Gérez vos produits en temps réel"],["📦","Réception des commandes","Recevez et préparez les commandes clients"],["📊","Tableau de bord","Suivez vos ventes et performances"],["💳","Paiements sécurisés","Commission de 3% seulement"]].map(([ic,t,s])=>(
+        <div key={t} style={{background:W,borderRadius:13,padding:14,marginBottom:10,display:"flex",gap:12,alignItems:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+          <div style={{width:44,height:44,borderRadius:11,background:GBG,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{ic}</div>
+          <div><p style={{color:TXT,fontWeight:700,fontSize:14,margin:"0 0 2px"}}>{t}</p><p style={{color:TXTS,fontSize:12,margin:0}}>{s}</p></div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-      <div style={{padding:"16px 16px 80px"}}>
-        <h3 style={{fontWeight:800,marginBottom:12}}>Livraisons disponibles</h3>
-        {livraisons.filter(l=>l.statut==="disponible").map(liv=>(
-          <div key={liv.id} style={S.card}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-              <span style={{fontWeight:800,color:"#E65100"}}>{liv.id}</span>
-              <Badge color="#E65100" bg="#FFF3E0">Disponible</Badge>
-            </div>
-            <div style={{fontSize:13,marginBottom:4}}>👤 {liv.client} · 📞 {liv.tel}</div>
-            <div style={{fontSize:13,color:TXTS,marginBottom:4}}>📍 {liv.pharmacie}</div>
-            <div style={{fontSize:13,color:TXTS,marginBottom:8}}>🏠 {liv.adresse}</div>
-            <div style={{display:"flex",gap:12,marginBottom:10}}>
-              <Badge color={INFO} bg="#E3F2FD">📏 {liv.distance}</Badge>
-              <Badge color={G} bg={GL}>💰 +{liv.frais} FCFA</Badge>
-            </div>
-            <button style={{...S.btn,width:"100%",background:"#E65100"}} onClick={()=>{setLivraisons(ls=>ls.map(l=>l.id===liv.id?{...l,statut:"acceptee"}:l));setToast({msg:"Livraison acceptée ! Rendez-vous à la pharmacie.",type:"success"});}}>
-              🛵 Accepter cette livraison
-            </button>
-          </div>
-        ))}
-        {livraisons.filter(l=>l.statut==="acceptee").map(liv=>(
-          <div key={liv.id} style={{...S.card,border:`2px solid #E65100`}}>
-            <Badge color="#E65100" bg="#FFF3E0">En cours</Badge>
-            <div style={{fontWeight:700,margin:"8px 0"}}>📦 {liv.id} — {liv.client}</div>
-            <div style={{fontSize:13,marginBottom:12}}>🏥 Aller à : {liv.pharmacie}</div>
-            <div style={{display:"flex",gap:8}}>
-              <button style={{...S.btn,flex:1,background:"#E65100",padding:"10px"}} onClick={()=>setToast({msg:"Commande récupérée ! En route vers le client.",type:"success"})}>
-                📦 Récupéré
-              </button>
-              <button style={{...S.btn,flex:1,padding:"10px"}} onClick={()=>{setLivraisons(ls=>ls.map(l=>l.id===liv.id?{...l,statut:"livree"}:l));setToast({msg:"Livraison effectuée ! +"+liv.frais+" FCFA crédité.",type:"success"});}}>
-                ✅ Livré
-              </button>
-            </div>
-          </div>
-        ))}
-        {livraisons.every(l=>l.statut==="livree")&&(
-          <div style={{textAlign:"center",padding:40,color:TXTS}}>
-            <div style={{fontSize:48}}>✅</div>
-            <p>Toutes les livraisons sont effectuées !</p>
-          </div>
-        )}
+function LoginModal({onClose,onSuccess}){
+  const [phone,setPhone]=useState("");
+  const [loading,setLoading]=useState(false);
+  const submit=async()=>{
+    if(!phone.trim())return;
+    setLoading(true);
+    await new Promise(r=>setTimeout(r,800));
+    onSuccess(phone,{nom:"Utilisateur",phone});
+    setLoading(false);
+  };
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div style={{background:W,borderRadius:"20px 20px 0 0",padding:24,width:"100%",maxWidth:480}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <h3 style={{color:TXT,fontWeight:800,margin:0}}>Connexion</h3>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:TXTS}}>✕</button>
+        </div>
+        <label style={{color:TXTS,fontSize:12,fontWeight:600,marginBottom:6,display:"block"}}>📱 Numéro de téléphone</label>
+        <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+225 07 XX XX XX XX"
+          style={{width:"100%",border:`2px solid ${phone?G:"#E0E8E3"}`,borderRadius:11,padding:"13px 14px",fontSize:15,outline:"none",color:TXT,boxSizing:"border-box",marginBottom:14}}/>
+        <button onClick={submit} disabled={!phone.trim()||loading}
+          style={{width:"100%",background:phone.trim()?G:"#CCC",color:W,border:"none",borderRadius:11,padding:14,fontWeight:800,cursor:phone.trim()?"pointer":"not-allowed",fontSize:15}}>
+          {loading?"Connexion...":"Se connecter"}
+        </button>
       </div>
     </div>
   );
 }
 
-// ══════════════════════════════════════════
-// ESPACE ADMIN
-// ══════════════════════════════════════════
-function PageAdmin(){
-  const [sousPage,setSousPage]=useState("dashboard");
-  const [connecte,setConnecte]=useState(false);
-  const [loginPwd,setLoginPwd]=useState("");
-  const [toast,setToast]=useState(null);
-
-  const PHARMACIES_ADMIN=[
-    {id:1,nom:"Pharmacie Centrale du Plateau",commune:"Plateau",statut:"active",cmds:47,ca:84500},
-    {id:2,nom:"Pharmacie Sainte Marie",commune:"Cocody",statut:"active",cmds:32,ca:58200},
-    {id:3,nom:"Pharmacie de la Paix",commune:"Yopougon",statut:"en_attente",cmds:0,ca:0},
-    {id:4,nom:"Pharmacie Abobo Centre",commune:"Abobo",statut:"suspendue",cmds:12,ca:21000},
-  ];
-  const [pharmas,setPharmas]=useState(PHARMACIES_ADMIN);
-
-  if(!connecte)return(
-    <div style={{padding:"40px 16px",textAlign:"center"}}>
-      <div style={{fontSize:48,marginBottom:16}}>⚙️</div>
-      <h2 style={{marginBottom:24}}>Espace Administrateur</h2>
-      <div style={{...S.card,maxWidth:320,margin:"0 auto"}}>
-        <label style={S.label}>Mot de passe admin</label>
-        <input value={loginPwd} onChange={e=>setLoginPwd(e.target.value)} type="password" placeholder="••••••••" style={{...S.input,marginBottom:16}}/>
-        <button style={{...S.btn,width:"100%"}} onClick={()=>setConnecte(true)}>Accéder</button>
-        <p style={{fontSize:11,color:TXTS,marginTop:8}}>Démo : cliquez sur Accéder directement</p>
-      </div>
-    </div>
-  );
-
-  return(
-    <div style={{paddingBottom:80}}>
-      {toast&&<Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
-      <div style={{background:`linear-gradient(135deg,#1A237E,#283593)`,padding:"16px",color:W}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div style={{fontWeight:800,fontSize:16}}>⚙️ Administration SantéExpress</div>
-          <button style={{background:"rgba(255,255,255,0.2)",border:"none",color:W,padding:"6px 12px",borderRadius:8,cursor:"pointer",fontSize:12}} onClick={()=>setConnecte(false)}>Déco.</button>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginTop:14}}>
-          {[["316","Pharmacies"],["12","Livreurs"],["1 247","Commandes"],["2.1M","CA FCFA"]].map(([v,l])=>(
-            <div key={l} style={{background:"rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 6px",textAlign:"center"}}>
-              <div style={{fontWeight:900,fontSize:15,color:"#C5CAE9"}}>{v}</div>
-              <div style={{fontSize:10,opacity:0.8}}>{l}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={S.tabs}>
-        {[["dashboard","📊 Dashboard"],["pharmacies","🏥 Pharmacies"],["commandes","📦 Commandes"],["livreurs","🛵 Livreurs"]].map(([id,label])=>(
-          <button key={id} style={{...S.tab,...(sousPage===id?S.tabActive:{})}} onClick={()=>setSousPage(id)}>{label}</button>
-        ))}
-      </div>
-
-      {sousPage==="dashboard"&&(
-        <div style={{padding:"16px 16px 80px"}}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-            {[["📦","Commandes aujourd'hui","47","+12%"],["💰","Revenus du jour","84 500 FCFA","+8%"],["🏥","Pharmacies actives","8/316","En ligne"],["⭐","Satisfaction","4.8/5","Note moy."]].map(([e,l,v,sub])=>(
-              <div key={l} style={{...S.statCard}}>
-                <div style={{fontSize:24,marginBottom:6}}>{e}</div>
-                <div style={{fontWeight:800,color:G,fontSize:16}}>{v}</div>
-                <div style={{fontSize:11,color:TXTS}}>{l}</div>
-                <div style={{fontSize:11,color:G,fontWeight:700,marginTop:2}}>{sub}</div>
-              </div>
-            ))}
-          </div>
-          <div style={S.card}>
-            <p style={{fontWeight:700,margin:"0 0 12px"}}>Commandes récentes</p>
-            {COMMANDES_DEMO.map(cmd=>(
-              <div key={cmd.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #F0F4F1"}}>
-                <div>
-                  <div style={{fontWeight:700,fontSize:13}}>{cmd.id}</div>
-                  <div style={{fontSize:11,color:TXTS}}>{cmd.pharmacie}</div>
-                </div>
-                <div style={{textAlign:"right"}}>
-                  <div style={{fontWeight:700,color:G}}>{cmd.total.toLocaleString()} FCFA</div>
-                  <div style={{fontSize:11,color:TXTS}}>{cmd.date}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {sousPage==="pharmacies"&&(
-        <div style={{padding:"16px 16px 80px"}}>
-          <h3 style={{fontWeight:800,marginBottom:12}}>Gestion des pharmacies</h3>
-          {pharmas.map(p=>{
-            const COLS={active:{c:G,bg:GL,l:"Active"},en_attente:{c:WARN,bg:"#FFF3E0",l:"En attente"},suspendue:{c:ERR,bg:"#FFEBEE",l:"Suspendue"}};
-            const col=COLS[p.statut];
-            return(
-              <div key={p.id} style={S.card}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-                  <span style={{fontWeight:700}}>{p.nom}</span>
-                  <Badge color={col.c} bg={col.bg}>{col.l}</Badge>
-                </div>
-                <div style={{fontSize:13,color:TXTS,marginBottom:8}}>📍 {p.commune} · 📦 {p.cmds} cmds · 💰 {p.ca.toLocaleString()} FCFA</div>
-                <div style={{display:"flex",gap:8}}>
-                  {p.statut==="en_attente"&&<button style={{...S.btn,flex:1,padding:"9px",fontSize:13}} onClick={()=>{setPharmas(ps=>ps.map(x=>x.id===p.id?{...x,statut:"active"}:x));setToast({msg:p.nom+" validée !",type:"success"});}}>✅ Valider</button>}
-                  {p.statut==="active"&&<button style={{...S.btnGray,flex:1,padding:"9px",fontSize:13}} onClick={()=>{setPharmas(ps=>ps.map(x=>x.id===p.id?{...x,statut:"suspendue"}:x));setToast({msg:p.nom+" suspendue",type:"error"});}}>⏸ Suspendre</button>}
-                  {p.statut==="suspendue"&&<button style={{...S.btn,flex:1,padding:"9px",fontSize:13}} onClick={()=>{setPharmas(ps=>ps.map(x=>x.id===p.id?{...x,statut:"active"}:x));setToast({msg:p.nom+" réactivée !",type:"success"});}}>▶️ Réactiver</button>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {sousPage==="commandes"&&(
-        <div style={{padding:"16px 16px 80px"}}>
-          <h3 style={{fontWeight:800,marginBottom:12}}>Toutes les commandes</h3>
-          {[...COMMANDES_DEMO,{id:"SE-0043",date:"2026-06-12",statut:"confirmee",total:5350,pharmacie:"Pharmacie Sainte Marie",items:[{nom:"Doliprane 1000mg",qte:3,prix:950},{nom:"Zinc",qte:1,prix:2500}]}].map(cmd=>{
-            const COLS={confirmee:{c:INFO,bg:"#E3F2FD",l:"Confirmée"},en_cours:{c:WARN,bg:"#FFF3E0",l:"En cours"},livree:{c:G,bg:GL,l:"Livrée"}};
-            const col=COLS[cmd.statut]||COLS.confirmee;
-            return(
-              <div key={cmd.id} style={S.card}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-                  <span style={{fontWeight:800,color:G}}>{cmd.id}</span>
-                  <Badge color={col.c} bg={col.bg}>{col.l}</Badge>
-                </div>
-                <div style={{fontSize:13,color:TXTS,marginBottom:4}}>📅 {cmd.date} · 🏥 {cmd.pharmacie}</div>
-                <div style={{fontWeight:800,color:G}}>{cmd.total.toLocaleString()} FCFA</div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {sousPage==="livreurs"&&(
-        <div style={{padding:"16px 16px 80px"}}>
-          <h3 style={{fontWeight:800,marginBottom:12}}>Gestion des livreurs</h3>
-          {[{id:1,nom:"Koné Mamadou",transport:"🛵 Moto",livraisons:47,note:4.9,statut:"actif"},{id:2,nom:"Diallo Ibrahim",transport:"🚗 Voiture",livraisons:32,note:4.7,statut:"actif"},{id:3,nom:"Ouattara Seydou",transport:"🛵 Moto",livraisons:5,note:4.2,statut:"en_attente"}].map(l=>(
-            <div key={l.id} style={S.card}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-                <span style={{fontWeight:700}}>{l.nom}</span>
-                <Badge color={l.statut==="actif"?G:WARN} bg={l.statut==="actif"?GL:"#FFF3E0"}>{l.statut==="actif"?"Actif":"En attente"}</Badge>
-              </div>
-              <div style={{fontSize:13,color:TXTS,marginBottom:8}}>{l.transport} · {l.livraisons} livraisons · ⭐ {l.note}</div>
-              {l.statut==="en_attente"&&(
-                <button style={{...S.btn,width:"100%",padding:"9px",fontSize:13}} onClick={()=>setToast({msg:l.nom+" validé comme livreur !",type:"success"})}>✅ Valider</button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════
-// APP PRINCIPALE
-// ══════════════════════════════════════════
-export default function App(){
-  const [page,setPage]=useState("accueil");
-  const [panier,setPanier]=useState([]);
-  const [commandeActive,setCommandeActive]=useState(null);
+/* ══ COMPOSANT RACINE ═══════════════════════════════════ */
+export default function SantéExpress(){
+  const [mode,setMode]=useState("landing");
+  const [cart,setCart]=useState([]);
+  const [product,setProduct]=useState(null);
+  const [search,setSearch]=useState("");
+  const [cat,setCat]=useState("all");
+  const [form,setForm]=useState({name:"",phone:"",address:"",note:"",payment:"wave",delivMode:"std",insurer:"",insurerCard:""});
+  const [orders,setOrders]=useState(INIT_ORDERS);
+  const [curOrder,setCurOrder]=useState(null);
+  const [rateTarget,setRateTarget]=useState(null);
+  const [token,setToken]=useState(null);
   const [user,setUser]=useState(null);
+  const [showLogin,setShowLogin]=useState(false);
+  const [itemsData,setItemsData]=useState([]);
+  const [pharmaciesData,setPharmaciesData]=useState([]);
+  const [searching,setSearching]=useState(false);
 
-  const totalPanier=panier.reduce((s,i)=>s+i.qte,0);
+  useEffect(()=>{
+    fetch("/api/produits").then(r=>r.json()).then(d=>{if(d?.produits?.length)setItemsData(d.produits);}).catch(()=>{});
+    fetch("/api/pharmacies").then(r=>r.json()).then(d=>{if(d?.pharmacies?.length)setPharmaciesData(d.pharmacies);}).catch(()=>{});
+  },[]);
 
-  const PAGES={
-    accueil:<PageAccueil setPage={setPage} panier={panier} setPanier={setPanier} user={user}/>,
-    catalogue:<PageCatalogue panier={panier} setPanier={setPanier} setPage={setPage}/>,
-    panier:<PagePanier panier={panier} setPanier={setPanier} setPage={setPage}/>,
-    checkout:<PageCheckout panier={panier} setPanier={setPanier} setPage={setPage} setCommandeActive={setCommandeActive}/>,
-    suivi:<PageSuivi commande={commandeActive} setPage={setPage}/>,
-    commandes:<PageCommandes commandeActive={commandeActive}/>,
-    pharmacie:<PagePharmacie/>,
-    livreur:<PageLivreur/>,
-    admin:<PageAdmin/>,
+  const subtotal=cart.reduce((s,i)=>s+((i.prix||i.price)||0)*i.qty,0);
+  const delivFee=form.delivMode==="yango"?DELIV_YANGO:DELIV_STD;
+  const count=cart.reduce((s,i)=>s+i.qty,0);
+
+  const addToCart=item=>setCart(prev=>{
+    const ex=prev.find(i=>i.id===item.id);
+    if(ex)return prev.map(i=>i.id===item.id?{...i,qty:i.qty+1}:i);
+    return [...prev,{...item,qty:1}];
+  });
+  const removeItem=id=>setCart(prev=>prev.filter(i=>i.id!==id));
+  const updateQty=(id,qty)=>qty<1?removeItem(id):setCart(prev=>prev.map(i=>i.id===id?{...i,qty}:i));
+
+  const navBack=()=>{
+    const map={product:"catalog",checkout:"cart",tracking:"history",history:"landing",rating:"history",livreur:"landing",admin:"landing",pharmacie:"landing"};
+    setMode(map[mode]||"landing");
   };
 
-  const PAGE_TITLES={
-    accueil:"SANTÉEXPRESS",catalogue:"Catalogue",panier:"Mon panier",
-    checkout:"Paiement",suivi:"Suivi commande",commandes:"Mes commandes",
-    pharmacie:"Espace Pharmacie 🏥",livreur:"Espace Livreur 🛵",admin:"Administration ⚙️",
+  const filtered=itemsData.filter(p=>(cat==="all"||p.categorie===cat||p.cat===cat)&&((p.nom||p.name)||"").toLowerCase().includes(search.toLowerCase()));
+
+  const placeOrder=async()=>{
+    const insurer=ASSURANCES.find(a=>a.id===form.insurer);
+    const insAmt=form.payment==="assurance"&&insurer?Math.round(subtotal*insurer.cover/100):0;
+    const body={
+      items:cart.map(i=>({produit_id:i.id,nom_produit:i.nom||i.name,prix_unitaire:i.prix||i.price,quantite:i.qty})),
+      pharmacie_id:pharmaciesData[0]?.id||1,
+      adresse_livraison:form.address,telephone_client:form.phone,nom_client:form.name,
+      mode_paiement:form.payment,mode_livraison:form.delivMode,
+      frais_livraison:delivFee,couverture_assurance:insAmt,
+      sous_total:subtotal,note_pharmacien:form.note||null,
+    };
+    let ref=`PC-${String(orders.length+4).padStart(4,"0")}`;
+    try{
+      const r=await fetch("/api/commandes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      const d=await r.json();
+      if(d?.commande?.reference)ref=d.commande.reference;
+    }catch{}
+    const o={id:ref,date:new Date().toLocaleDateString("fr-FR"),items:[...cart],subtotal,delivFee,total:subtotal+delivFee-insAmt,status:"confirmed",pharmacy:(pharmaciesData[0]?.nom||"Pharmacie partenaire"),payment:form.payment,delivMode:form.delivMode,address:form.address,phone:form.phone,name:form.name,rating:null};
+    setOrders(prev=>[o,...prev]);
+    setCurOrder(o);
+    setCart([]);
+    setSearching(true);
   };
 
   return(
     <>
-      <style>{`
-        *{box-sizing:border-box;margin:0;padding:0;}
-        body{background:#E8ECE9;}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        ::-webkit-scrollbar{display:none}
-        input:focus,textarea:focus{border-color:${G}!important;box-shadow:0 0 0 3px ${GL};}
-      `}</style>
-      <div style={S.app}>
-        {/* HEADER */}
-        <div style={S.header}>
-          <button onClick={()=>setPage("accueil")} style={{background:"none",border:"none",cursor:"pointer"}}>
-            <span style={S.logo}>SANTÉ<span style={{color:GL}}>EXPRESS</span></span>
-          </button>
-          <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <button onClick={()=>setPage("panier")} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:10,padding:"8px 12px",cursor:"pointer",position:"relative",fontSize:18}}>
-              🛒{totalPanier>0&&<span style={{position:"absolute",top:-4,right:-4,background:ERR,color:W,borderRadius:"50%",width:18,height:18,fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>{totalPanier}</span>}
-            </button>
-            <button onClick={()=>setPage("commandes")} style={{background:"rgba(255,255,255,0.15)",border:`1.5px solid rgba(255,255,255,0.4)`,borderRadius:10,padding:"7px 14px",cursor:"pointer",color:W,fontSize:13,fontWeight:700}}>
-              Connexion
-            </button>
-          </div>
-        </div>
-
-        {/* SOUS-HEADER pour pages intérieures */}
-        {page!=="accueil"&&(
-          <div style={{background:W,padding:"12px 16px",display:"flex",alignItems:"center",gap:10,borderBottom:"1.5px solid #E8ECE9",position:"sticky",top:56,zIndex:95}}>
-            <button onClick={()=>setPage("accueil")} style={{background:GBG,border:"none",borderRadius:10,width:34,height:34,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>←</button>
-            <span style={{fontWeight:800,fontSize:16}}>{PAGE_TITLES[page]||"SantéExpress"}</span>
-          </div>
-        )}
-
-        {/* CONTENU */}
-        <div>{PAGES[page]||PAGES.accueil}</div>
-
-        {/* BOTTOM NAV */}
-        <div style={S.bottomNav}>
-          {[["accueil","🏠","Accueil"],["catalogue","🛍️","Catalogue"],["commandes","📋","Commandes"],["admin","⚙️","Admin"]].map(([p,e,l])=>(
-            <button key={p} style={{...S.navItem,...(page===p?S.navItemActive:{})}} onClick={()=>setPage(p)}>
-              <span style={{fontSize:22}}>{e}</span>{l}
-            </button>
-          ))}
-        </div>
+      <Head>
+        <title>SantéExpress — Médicaments livrés à Abidjan</title>
+        <meta name="description" content="Commandez vos médicaments en ligne et faites-les livrer chez vous à Abidjan. Pharmacies de garde, paiement Mobile Money."/>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+        <link rel="icon" href="/favicon.ico"/>
+      </Head>
+      <div style={{fontFamily:"'Segoe UI',sans-serif",background:BG,minHeight:"100vh",maxWidth:480,margin:"0 auto",paddingBottom:["livreur","admin","pharmacie"].includes(mode)?0:64}}>
+        <Header mode={mode} navBack={navBack} count={count} setMode={setMode} user={user} onLogin={()=>setShowLogin(true)}/>
+        {showLogin&&<LoginModal onClose={()=>setShowLogin(false)} onSuccess={(tok,usr)=>{setToken(tok);setUser(usr);setShowLogin(false);}}/>}
+        {searching&&<SearchingPharmacy commune={form.address.split(",")[0]||"Abidjan"} onFound={()=>{setSearching(false);setMode("tracking");}}/>}
+        {mode==="landing"&&<Landing setMode={setMode} setCat={setCat} pharmacies={pharmaciesData}/>}
+        {mode==="catalog"&&<Catalog items={filtered} cats={CATS} cat={cat} setCat={setCat} search={search} setSearch={setSearch} onSelect={p=>{setProduct(p);setMode("product");}} onAdd={addToCart}/>}
+        {mode==="product"&&product&&<Product product={product} onAdd={addToCart} inCart={cart.some(i=>i.id===product.id)}/>}
+        {mode==="cart"&&<Cart cart={cart} subtotal={subtotal} delivFee={delivFee} onRemove={removeItem} onQty={updateQty} onCheckout={()=>setMode("checkout")} setMode={setMode}/>}
+        {mode==="checkout"&&<Checkout cart={cart} subtotal={subtotal} delivFee={delivFee} form={form} setForm={setForm} onConfirm={placeOrder}/>}
+        {mode==="tracking"&&curOrder&&<Tracking order={curOrder} onRate={()=>{setRateTarget(curOrder);setMode("rating");}}/>}
+        {mode==="history"&&<History orders={orders} onOpen={o=>{setCurOrder(o);setMode("tracking");}} onRate={o=>{setRateTarget(o);setMode("rating");}}/>}
+        {mode==="rating"&&rateTarget&&<Rating order={rateTarget} onDone={r=>{setOrders(prev=>prev.map(o=>o.id===rateTarget.id?{...o,rating:r}:o));setMode("history");}}/>}
+        {mode==="livreur"&&<Livreur orders={orders}/>}
+        {mode==="admin"&&<Admin orders={orders} pharmacies={pharmaciesData}/>}
+        {mode==="pharmacie"&&<Pharmacie/>}
+        {!["livreur","admin","pharmacie"].includes(mode)&&<BottomNav mode={mode} setMode={setMode} count={count}/>}
       </div>
     </>
   );
