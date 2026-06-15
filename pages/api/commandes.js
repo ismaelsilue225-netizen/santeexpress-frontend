@@ -1,3 +1,9 @@
+// ══════════════════════════════════════════════════
+// FICHIER : pages/api/commandes/index.js
+// Remplace ou complète pages/api/commandes.js
+// Ajoute le support GET avec filtre ?statut=confirmed
+// ══════════════════════════════════════════════════
+
 import { supabase } from '../../lib/supabase'
 
 function genRef() {
@@ -6,18 +12,15 @@ function genRef() {
 
 function genWhatsAppMessage(commande, items) {
   const PAY = {
-    wave: 'Wave CI 📲',
-    orange: 'Orange Money 📲',
-    cinetpay: 'CinetPay 💳',
-    cash: 'Cash à la livraison 💵',
-    assurance: 'Assurance maladie 🛡️'
+    wave: 'Wave CI 📲', orange: 'Orange Money 📲',
+    cinetpay: 'CinetPay 💳', cash: 'Cash à la livraison 💵', assurance: 'Assurance maladie 🛡️'
   }
   const LIVRAISON = {
-    std: 'SantéExpress 🛵 (30-45 min)',
-    yango: 'Yango Delivery 🚗 (45-60 min)'
+    std: 'SantéExpress 🛵 (30-45 min)', yango: 'Yango Delivery 🚗 (45-60 min)'
   }
-
-  const itemsList = items.map(i => `  💊 ${i.nom_produit} ×${i.quantite} — ${(i.prix_unitaire * i.quantite).toLocaleString('fr-FR')} FCFA`).join('\n')
+  const itemsList = items.map(i =>
+    `  💊 ${i.nom_produit} ×${i.quantite} — ${(i.prix_unitaire * i.quantite).toLocaleString('fr-FR')} FCFA`
+  ).join('\n')
 
   return `🏥 *Nouvelle commande SantéExpress !*
 ─────────────────────────────
@@ -39,6 +42,17 @@ ${itemsList}
 }
 
 export default async function handler(req, res) {
+  // ── GET : liste des commandes (avec filtre optionnel ?statut=confirmed) ──
+  if (req.method === 'GET') {
+    const { statut } = req.query
+    let query = supabase.from('commandes').select('*').order('id', { ascending: false })
+    if (statut) query = query.eq('statut', statut)
+    const { data, error } = await query
+    if (error) return res.status(500).json({ error: error.message })
+    return res.status(200).json({ commandes: data || [] })
+  }
+
+  // ── POST : créer une nouvelle commande ──
   if (req.method !== 'POST') return res.status(405).end()
 
   const body = req.body
@@ -57,9 +71,7 @@ export default async function handler(req, res) {
       items: body.items || [],
       sous_total: body.sous_total || 0,
       frais_livraison: body.frais_livraison || 500,
-      commission,
-      total,
-      montant_pharmacie,
+      commission, total, montant_pharmacie,
       mode_paiement: body.mode_paiement || 'cash',
       mode_livraison: body.mode_livraison || 'std',
       statut: 'confirmed',
@@ -68,25 +80,17 @@ export default async function handler(req, res) {
     }
 
     const { data, error } = await supabase.from('commandes').insert([insertData]).select().single()
-
     if (error) {
       console.error('Supabase error:', JSON.stringify(error))
       return res.status(201).json({ commande: { id: Date.now(), reference, total, statut: 'confirmed' }, error: error.message })
     }
 
-    // ── Générer le lien WhatsApp ──
     const message = genWhatsAppMessage(insertData, body.items || [])
     const encodedMsg = encodeURIComponent(message)
-
-    // Numéro admin SantéExpress (reçoit toutes les commandes)
     const ADMIN_WHATSAPP = '2250777926219'
     const whatsappUrl = `https://wa.me/${ADMIN_WHATSAPP}?text=${encodedMsg}`
 
-    return res.status(201).json({
-      commande: data,
-      whatsapp_url: whatsappUrl,
-      reference
-    })
+    return res.status(201).json({ commande: data, whatsapp_url: whatsappUrl, reference })
 
   } catch(e) {
     console.error('Catch error:', e.message)
