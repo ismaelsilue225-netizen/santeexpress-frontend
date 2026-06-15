@@ -542,11 +542,21 @@ function Checkout({cart,subtotal,delivFee,form,setForm,onConfirm}){
 function Tracking({order,onRate}){
   const isDelivered=order.status==="delivered";
   const [step,setStep]=useState(isDelivered?4:1);
+  const [waSent,setWaSent]=useState(false);
   useEffect(()=>{
     if(step<4){const t=setTimeout(()=>setStep(s=>s+1),3500);return()=>clearTimeout(t);}
   },[step]);
   const STEPS=[{ic:"✅",lb:"Commande confirmée",sub:"Reçue par la pharmacie"},{ic:"💊",lb:"Préparation en cours",sub:"Le pharmacien prépare votre sac"},{ic:"🛵",lb:"Livreur en route",sub:"Votre commande est en chemin"},{ic:"🏠",lb:"Livraison effectuée",sub:"Votre commande est arrivée !"}];
   const PAY_LBL={wave:"Wave CI",orange:"Orange Money",cinetpay:"CinetPay",cash:"Cash",assurance:"Assurance"};
+
+  // Générer le message WhatsApp pour la pharmacie
+  const genWhatsApp=()=>{
+    const items=(order.items||[]).map(i=>`• ${i.nom||i.name} ×${i.qty||i.quantite} — ${((i.prix||i.price||i.prix_unitaire||0)*(i.qty||i.quantite||1)).toLocaleString("fr-FR")} FCFA`).join("%0A");
+    const msg=`🏥 *Nouvelle commande SantéExpress !*%0A%0A🔖 Réf : *${order.id}*%0A👤 Client : ${order.name||order.nom_client||"Client"}%0A📱 Tél : ${order.phone||order.telephone_client||""}%0A📍 Adresse : ${order.address||order.adresse_livraison||""}%0A%0A${items}%0A%0A💰 *Total : ${(order.total||0).toLocaleString("fr-FR")} FCFA*%0A💳 Paiement : ${PAY_LBL[order.payment]||"Cash"}%0A%0AConfirmez avec *OUI* ✅`;
+    const phone="22507779262190".replace(/\s/g,"");
+    window.open(`https://wa.me/${phone}?text=${msg}`,"_blank");
+    setWaSent(true);
+  };
   return(
     <div style={{padding:"16px 16px",paddingBottom:80}}>
       <div style={{background:W,borderRadius:13,padding:13,marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
@@ -577,6 +587,24 @@ function Tracking({order,onRate}){
           <div key={v} style={{display:"flex",gap:9,marginBottom:7}}><span style={{fontSize:14}}>{ic}</span><span style={{color:TXT,fontSize:13,fontWeight:600}}>{v}</span></div>
         ))}
       </div>
+      {/* Bouton WhatsApp — notifier la pharmacie */}
+      {step>=1&&(
+        <div style={{background:waSent?"#E8F5EE":"#FFFFFF",border:`2px solid ${waSent?G:"#25D366"}`,borderRadius:13,padding:16,marginBottom:12,textAlign:"center"}}>
+          {waSent?(
+            <p style={{color:G,fontWeight:700,fontSize:14,margin:0}}>✅ Pharmacie notifiée sur WhatsApp !</p>
+          ):(
+            <>
+              <p style={{color:TXT,fontWeight:700,fontSize:14,marginBottom:6}}>📱 Notifier la pharmacie</p>
+              <p style={{color:TXTS,fontSize:12,marginBottom:12}}>Envoyez les détails de votre commande à la pharmacie via WhatsApp</p>
+              <button onClick={genWhatsApp}
+                style={{background:"#25D366",color:W,border:"none",borderRadius:10,padding:"12px 24px",fontWeight:800,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",gap:8,margin:"0 auto"}}>
+                <span style={{fontSize:20}}>📱</span> Envoyer sur WhatsApp
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {(step===4||isDelivered)&&!order.rating&&(
         <div style={{background:`linear-gradient(135deg,${G},${GD})`,borderRadius:13,padding:16,textAlign:"center"}}>
           <p style={{color:W,fontWeight:700,fontSize:14,marginBottom:8}}>🌟 Commande livrée ! Merci</p>
@@ -806,6 +834,7 @@ export default function SantéExpress(){
       const r=await fetch("/api/commandes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
       const d=await r.json();
       if(d?.commande?.reference)ref=d.commande.reference;
+      if(d?.whatsapp_url){setTimeout(()=>window.open(d.whatsapp_url,"_blank"),2000);}
     }catch{}
     const o={id:ref,date:new Date().toLocaleDateString("fr-FR"),items:[...cart],subtotal,delivFee,total:subtotal+delivFee-insAmt,status:"confirmed",pharmacy:(pharmaciesData[0]?.nom||"Pharmacie partenaire"),payment:form.payment,delivMode:form.delivMode,address:form.address,phone:form.phone,name:form.name,rating:null};
     setOrders(prev=>[o,...prev]);
