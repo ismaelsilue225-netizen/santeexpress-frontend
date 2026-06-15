@@ -6,8 +6,14 @@ export default async function handler(req, res) {
   const { commune } = req.query
 
   try {
-    let query = supabase.from('pharmacies').select('*').order('nom')
-    if (commune) query = query.eq('district', commune)
+    let query = supabase
+      .from('pharmacies')
+      .select('*')
+      .order('nom')
+
+    if (commune) {
+      query = query.eq('district', commune)
+    }
 
     const { data, error } = await query
 
@@ -17,6 +23,9 @@ export default async function handler(req, res) {
     }
 
     return res.json({ pharmacies: data || [] })
-  } catch(e) {
+
+  } catch (e) {
     console.error('Catch error:', e.message)
     return res.status(500).json({ error: e.message })
+  }
+}
