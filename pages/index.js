@@ -729,13 +729,14 @@ function Admin({orders,pharmacies}){
 }
 
 function Pharmacie(){
-  const [page,setPage]=useState("accueil"); // accueil | login | dashboard
+  const [page,setPage]=useState("accueil"); // accueil | login | inscription | dashboard
   const [phone,setPhone]=useState("");
   const [nom,setNom]=useState("");
   const [loading,setLoading]=useState(false);
   const [commandes,setCommandes]=useState([]);
   const [pharmacieInfo,setPharmacieInfo]=useState(null);
   const [msg,setMsg]=useState("");
+  const [form,setForm]=useState({});
 
   const login=async()=>{
     if(!phone.trim())return;
@@ -779,6 +780,9 @@ function Pharmacie(){
         <button onClick={()=>setPage("login")} style={{background:W,color:G,border:"none",borderRadius:30,padding:"13px 28px",fontWeight:800,cursor:"pointer",fontSize:15,marginBottom:10,width:"100%"}}>
           🔐 Se connecter
         </button>
+        <button onClick={()=>setPage("inscription")} style={{background:"rgba(255,255,255,0.15)",color:W,border:"2px solid rgba(255,255,255,0.5)",borderRadius:30,padding:"13px 28px",fontWeight:800,cursor:"pointer",fontSize:15,width:"100%"}}>
+          ➕ Rejoindre SantéExpress
+        </button>
       </div>
       {[["📦","Recevez les commandes","Soyez notifié en temps réel"],["✅","Confirmez en 1 clic","Acceptez ou refusez chaque commande"],["💰","Encaissez directement","Le client paie, vous recevez 99%"],["📊","Suivez vos stats","Ventes, commandes, performances"]].map(([ic,t,s])=>(
         <div key={t} style={{background:W,borderRadius:13,padding:14,marginBottom:10,display:"flex",gap:12,alignItems:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
@@ -786,14 +790,75 @@ function Pharmacie(){
           <div><p style={{color:TXT,fontWeight:700,fontSize:14,margin:"0 0 2px"}}>{t}</p><p style={{color:TXTS,fontSize:12,margin:0}}>{s}</p></div>
         </div>
       ))}
-      <div style={{background:"#FFF9E6",border:`1px solid ${AMBER}`,borderRadius:13,padding:16,marginTop:10,textAlign:"center"}}>
-        <p style={{color:"#7A5A00",fontWeight:700,fontSize:13,margin:"0 0 8px"}}>Pas encore partenaire ?</p>
-        <p style={{color:"#7A5A00",fontSize:12,margin:"0 0 12px"}}>Rejoignez le réseau SantéExpress — Commission 1% seulement !</p>
-        <a href="https://wa.me/22507779262190?text=Bonjour%2C%20je%20souhaite%20rejoindre%20SantéExpress%20comme%20pharmacie%20partenaire" target="_blank" rel="noreferrer"
-          style={{background:AMBER,color:W,borderRadius:20,padding:"10px 20px",fontWeight:700,cursor:"pointer",fontSize:13,textDecoration:"none",display:"inline-block"}}>
-          📱 Nous contacter sur WhatsApp
-        </a>
+    </div>
+  );
+
+  if(page==="inscription") return(
+    <div style={{padding:"20px 16px 80px"}}>
+      <div style={{textAlign:"center",marginBottom:24}}>
+        <div style={{fontSize:48,marginBottom:10}}>🏥</div>
+        <h2 style={{color:TXT,fontWeight:900,marginBottom:6}}>Rejoindre SantéExpress</h2>
+        <p style={{color:TXTS,fontSize:13}}>Remplissez ce formulaire — nous vous contactons sous 24h</p>
       </div>
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {[
+          {k:"nomPharmacie",lb:"🏥 Nom de la pharmacie",ph:"Pharmacie du Bonheur"},
+          {k:"responsable",lb:"👤 Nom du responsable",ph:"Dr. Koné Amadou"},
+          {k:"telephone",lb:"📱 Téléphone",ph:"+225 07 XX XX XX XX"},
+          {k:"email",lb:"📧 Email (optionnel)",ph:"pharmacie@email.com"},
+          {k:"adresse",lb:"📍 Adresse complète",ph:"Rue principale, quartier..."},
+        ].map(({k,lb,ph})=>(
+          <div key={k}>
+            <label style={{color:TXTS,fontSize:12,fontWeight:600,marginBottom:5,display:"block"}}>{lb}</label>
+            <input value={form[k]||""} onChange={e=>setForm(p=>({...p,[k]:e.target.value}))} placeholder={ph}
+              style={{width:"100%",border:`2px solid ${form[k]?G:"#E0E8E3"}`,borderRadius:10,padding:"11px 13px",fontSize:14,outline:"none",color:TXT,background:W,boxSizing:"border-box"}}/>
+          </div>
+        ))}
+        <div>
+          <label style={{color:TXTS,fontSize:12,fontWeight:600,marginBottom:5,display:"block"}}>🏙️ Commune</label>
+          <select value={form.commune||""} onChange={e=>setForm(p=>({...p,commune:e.target.value}))}
+            style={{width:"100%",border:`2px solid ${form.commune?G:"#E0E8E3"}`,borderRadius:10,padding:"11px 13px",fontSize:14,outline:"none",color:TXT,background:W,boxSizing:"border-box"}}>
+            <option value="">Sélectionnez une commune</option>
+            {["Plateau","Cocody","Yopougon","Abobo","Adjamé","Marcory","Treichville","Koumassi","Port-Bouët","Attécoubé","Bingerville","Anyama","Songon"].map(c=>(
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={{color:TXTS,fontSize:12,fontWeight:600,marginBottom:5,display:"block"}}>📱 Numéro Wave (pour recevoir les paiements)</label>
+          <input value={form.numeroWave||""} onChange={e=>setForm(p=>({...p,numeroWave:e.target.value}))} placeholder="+225 07 XX XX XX XX"
+            style={{width:"100%",border:`2px solid ${form.numeroWave?G:"#E0E8E3"}`,borderRadius:10,padding:"11px 13px",fontSize:14,outline:"none",color:TXT,background:W,boxSizing:"border-box"}}/>
+        </div>
+      </div>
+
+      {msg&&<p style={{color:msg.includes("✅")?G:RED,fontSize:13,textAlign:"center",marginTop:12,fontWeight:600}}>{msg}</p>}
+
+      <button onClick={async()=>{
+        if(!form.nomPharmacie||!form.responsable||!form.telephone||!form.adresse||!form.commune){
+          setMsg("Veuillez remplir tous les champs obligatoires");return;
+        }
+        setLoading(true);
+        try{
+          const r=await fetch("/api/demandes-pharmacies",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+            nom_pharmacie:form.nomPharmacie,responsable:form.responsable,telephone:form.telephone,
+            email:form.email||null,adresse:form.adresse,commune:form.commune,numero_wave:form.numeroWave||null
+          })});
+          const d=await r.json();
+          if(d.success){
+            setMsg("✅ Demande envoyée ! Nous vous contactons sous 24h.");
+            setTimeout(()=>setPage("accueil"),2500);
+          } else {
+            setMsg("Erreur lors de l'envoi. Réessayez.");
+          }
+        }catch{setMsg("Erreur de connexion. Réessayez.");}
+        setLoading(false);
+      }} disabled={loading}
+        style={{width:"100%",background:G,color:W,border:"none",borderRadius:13,padding:15,fontWeight:800,cursor:"pointer",fontSize:15,marginTop:16}}>
+        {loading?"Envoi en cours...":"✅ Envoyer ma demande"}
+      </button>
+      <button onClick={()=>setPage("accueil")} style={{width:"100%",background:"none",border:"none",color:TXTS,cursor:"pointer",fontSize:13,marginTop:10}}>
+        ← Retour
+      </button>
     </div>
   );
 
