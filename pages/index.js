@@ -674,27 +674,184 @@ function Rating({order,onDone}){
   );
 }
 
-function Livreur({orders}){
-  const active=orders.filter(o=>o.status==="confirmed"||o.status==="delivering");
-  return(
-    <div style={{padding:"16px 16px 40px"}}>
-      <div style={{background:`linear-gradient(135deg,${G},${GD})`,borderRadius:16,padding:18,marginBottom:16,color:W}}>
-        <h2 style={{fontWeight:900,fontSize:20,margin:"0 0 5px"}}>🛵 Espace Livreur</h2>
-        <p style={{fontSize:13,opacity:0.8,margin:0}}>{active.length} livraison{active.length!==1?"s":""} en attente</p>
-      </div>
-      {active.length===0
-        ?<div style={{textAlign:"center",padding:"40px 0",color:TXTS}}><div style={{fontSize:48}}>✅</div><p style={{fontWeight:600,marginTop:12}}>Aucune livraison en attente</p></div>
-        :active.map(o=>(
-          <div key={o.id} style={{background:W,borderRadius:13,padding:14,marginBottom:10,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-              <span style={{color:TXT,fontWeight:800}}>#{o.id}</span>
-              <span style={{color:GD,fontWeight:700}}>{fmt(o.total)}</span>
-            </div>
-            <p style={{color:TXTS,fontSize:12,margin:"0 0 8px"}}>📍 {o.address||"Adresse non renseignée"}</p>
-            <button style={{background:G,color:W,border:"none",borderRadius:9,padding:"8px 16px",fontWeight:700,cursor:"pointer",fontSize:13}}>Accepter la livraison</button>
-          </div>
-        ))
+function Livreur(){
+  const [page,setPage]=useState("accueil"); // accueil | login | inscription | dashboard
+  const [phone,setPhone]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [msg,setMsg]=useState("");
+  const [form,setForm]=useState({});
+  const [livreurInfo,setLivreurInfo]=useState(null);
+  const [commandes,setCommandes]=useState([]);
+
+  const login=async()=>{
+    if(!phone.trim())return;
+    setLoading(true);
+    try{
+      const r=await fetch(`/api/livreurs?telephone=${phone.trim()}`);
+      const d=await r.json();
+      const found=(d.livreurs||[]).find(l=>l.telephone?.replace(/\s/g,"")===phone.replace(/\s/g,""));
+      if(found){
+        setLivreurInfo(found);
+        const r2=await fetch("/api/commandes?statut=delivering");
+        const d2=await r2.json();
+        setCommandes(d2.commandes||[]);
+        setPage("dashboard");
+      } else {
+        setMsg("Livreur non trouvé. Vérifiez votre numéro ou inscrivez-vous.");
       }
+    }catch{
+      setMsg("Erreur de connexion. Réessayez.");
+    }
+    setLoading(false);
+  };
+
+  const inscrire=async()=>{
+    if(!form.nom||!form.telephone||!form.transport){
+      setMsg("Veuillez remplir tous les champs obligatoires");return;
+    }
+    setLoading(true);
+    try{
+      const r=await fetch("/api/livreurs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        nom:form.nom,telephone:form.telephone,email:form.email||null,transport:form.transport,zone:form.zone||null
+      })});
+      const d=await r.json();
+      setMsg("✅ Inscription réussie ! Vous pouvez maintenant vous connecter.");
+      setTimeout(()=>{setPage("login");setMsg("");},2000);
+    }catch{setMsg("Erreur lors de l'inscription. Réessayez.");}
+    setLoading(false);
+  };
+
+  if(page==="accueil") return(
+    <div style={{padding:"16px 16px 40px"}}>
+      <div style={{background:`linear-gradient(135deg,#FF8A00,#E65100)`,borderRadius:16,padding:24,marginBottom:20,color:W,textAlign:"center"}}>
+        <div style={{fontSize:48,marginBottom:10}}>🛵</div>
+        <h2 style={{fontWeight:900,fontSize:22,margin:"0 0 8px"}}>Espace Livreur</h2>
+        <p style={{fontSize:14,opacity:0.9,margin:"0 0 20px"}}>Livrez et gagnez de l'argent avec SantéExpress</p>
+        <button onClick={()=>setPage("login")} style={{background:W,color:"#E65100",border:"none",borderRadius:30,padding:"13px 28px",fontWeight:800,cursor:"pointer",fontSize:15,marginBottom:10,width:"100%"}}>
+          🔐 Se connecter
+        </button>
+        <button onClick={()=>setPage("inscription")} style={{background:"rgba(255,255,255,0.15)",color:W,border:"2px solid rgba(255,255,255,0.5)",borderRadius:30,padding:"13px 28px",fontWeight:800,cursor:"pointer",fontSize:15,width:"100%"}}>
+          ➕ Devenir livreur
+        </button>
+      </div>
+      {[["💰","500-800 FCFA / livraison","Gagnez selon les distances"],["📱","App simple","Acceptez les livraisons en 1 clic"],["⏱️","Horaires flexibles","Travaillez quand vous voulez"],["🛵","Moto ou vélo","Tous les véhicules acceptés"]].map(([ic,t,s])=>(
+        <div key={t} style={{background:W,borderRadius:13,padding:14,marginBottom:10,display:"flex",gap:12,alignItems:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+          <div style={{width:44,height:44,borderRadius:11,background:"#FFF3E0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{ic}</div>
+          <div><p style={{color:TXT,fontWeight:700,fontSize:14,margin:"0 0 2px"}}>{t}</p><p style={{color:TXTS,fontSize:12,margin:0}}>{s}</p></div>
+        </div>
+      ))}
+    </div>
+  );
+
+  if(page==="login") return(
+    <div style={{padding:"30px 20px"}}>
+      <div style={{textAlign:"center",marginBottom:24}}>
+        <div style={{fontSize:52,marginBottom:10}}>🛵</div>
+        <h2 style={{color:TXT,fontWeight:900,marginBottom:6}}>Connexion Livreur</h2>
+        <p style={{color:TXTS,fontSize:13}}>Entrez votre numéro de téléphone enregistré</p>
+      </div>
+      <label style={{color:TXTS,fontSize:12,fontWeight:600,marginBottom:6,display:"block"}}>📱 Numéro de téléphone</label>
+      <input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+225 XX XX XX XX XX"
+        style={{width:"100%",border:`2px solid ${phone?"#E65100":"#E0E8E3"}`,borderRadius:11,padding:"13px 14px",fontSize:15,outline:"none",color:TXT,boxSizing:"border-box",marginBottom:14}}/>
+      {msg&&<p style={{color:RED,fontSize:12,marginBottom:10,textAlign:"center"}}>{msg}</p>}
+      <button onClick={login} disabled={!phone.trim()||loading}
+        style={{width:"100%",background:phone.trim()?"#E65100":"#CCC",color:W,border:"none",borderRadius:11,padding:14,fontWeight:800,cursor:phone.trim()?"pointer":"not-allowed",fontSize:15,marginBottom:10}}>
+        {loading?"Connexion...":"Se connecter →"}
+      </button>
+      <button onClick={()=>{setPage("accueil");setMsg("");}} style={{width:"100%",background:"none",border:"none",color:TXTS,cursor:"pointer",fontSize:13}}>← Retour</button>
+    </div>
+  );
+
+  if(page==="inscription") return(
+    <div style={{padding:"20px 16px 80px"}}>
+      <div style={{textAlign:"center",marginBottom:24}}>
+        <div style={{fontSize:48,marginBottom:10}}>🛵</div>
+        <h2 style={{color:TXT,fontWeight:900,marginBottom:6}}>Devenir Livreur</h2>
+        <p style={{color:TXTS,fontSize:13}}>Remplissez ce formulaire pour rejoindre l'équipe</p>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {[
+          {k:"nom",lb:"👤 Nom complet",ph:"Koné Mamadou"},
+          {k:"telephone",lb:"📱 Téléphone",ph:"+225 07 XX XX XX XX"},
+          {k:"email",lb:"📧 Email (optionnel)",ph:"livreur@email.com"},
+        ].map(({k,lb,ph})=>(
+          <div key={k}>
+            <label style={{color:TXTS,fontSize:12,fontWeight:600,marginBottom:5,display:"block"}}>{lb}</label>
+            <input value={form[k]||""} onChange={e=>setForm(p=>({...p,[k]:e.target.value}))} placeholder={ph}
+              style={{width:"100%",border:`2px solid ${form[k]?"#E65100":"#E0E8E3"}`,borderRadius:10,padding:"11px 13px",fontSize:14,outline:"none",color:TXT,background:W,boxSizing:"border-box"}}/>
+          </div>
+        ))}
+        <div>
+          <label style={{color:TXTS,fontSize:12,fontWeight:600,marginBottom:5,display:"block"}}>🛵 Moyen de transport</label>
+          <select value={form.transport||""} onChange={e=>setForm(p=>({...p,transport:e.target.value}))}
+            style={{width:"100%",border:`2px solid ${form.transport?"#E65100":"#E0E8E3"}`,borderRadius:10,padding:"11px 13px",fontSize:14,outline:"none",color:TXT,background:W,boxSizing:"border-box"}}>
+            <option value="">Sélectionnez votre transport</option>
+            <option value="moto">🏍️ Moto</option>
+            <option value="velo">🚲 Vélo</option>
+            <option value="voiture">🚗 Voiture</option>
+            <option value="tricycle">🛺 Tricycle</option>
+          </select>
+        </div>
+        <div>
+          <label style={{color:TXTS,fontSize:12,fontWeight:600,marginBottom:5,display:"block"}}>🏙️ Zone de livraison préférée</label>
+          <select value={form.zone||""} onChange={e=>setForm(p=>({...p,zone:e.target.value}))}
+            style={{width:"100%",border:`2px solid ${form.zone?"#E65100":"#E0E8E3"}`,borderRadius:10,padding:"11px 13px",fontSize:14,outline:"none",color:TXT,background:W,boxSizing:"border-box"}}>
+            <option value="">Sélectionnez une zone</option>
+            {["Plateau","Cocody","Yopougon","Abobo","Adjamé","Marcory","Treichville","Koumassi","Port-Bouët","Attécoubé","Bingerville","Anyama"].map(c=>(
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {msg&&<p style={{color:msg.includes("✅")?G:RED,fontSize:13,textAlign:"center",marginTop:12,fontWeight:600}}>{msg}</p>}
+      <button onClick={inscrire} disabled={loading}
+        style={{width:"100%",background:"#E65100",color:W,border:"none",borderRadius:13,padding:15,fontWeight:800,cursor:"pointer",fontSize:15,marginTop:16}}>
+        {loading?"Inscription...":"✅ M'inscrire comme livreur"}
+      </button>
+      <button onClick={()=>{setPage("accueil");setMsg("");}} style={{width:"100%",background:"none",border:"none",color:TXTS,cursor:"pointer",fontSize:13,marginTop:10}}>
+        ← Retour
+      </button>
+    </div>
+  );
+
+  // DASHBOARD LIVREUR
+  return(
+    <div style={{padding:"16px 16px 80px"}}>
+      <div style={{background:`linear-gradient(135deg,#FF8A00,#E65100)`,borderRadius:16,padding:16,marginBottom:16,color:W}}>
+        <p style={{fontSize:11,opacity:0.7,margin:"0 0 2px"}}>CONNECTÉ</p>
+        <h2 style={{fontWeight:900,fontSize:18,margin:"0 0 4px"}}>{livreurInfo?.nom||"Livreur"}</h2>
+        <p style={{fontSize:12,opacity:0.8,margin:0}}>{livreurInfo?.transport} · {livreurInfo?.zone||"Toutes zones"}</p>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        {[[commandes.length,"Disponibles","📦","#FF8A00"],[livreurInfo?.note||5.0,"Note","⭐",AMBER],[fmt(livreurInfo?.revenus_total||0),"Revenus total","💰",G]].map(([v,l,ic,clr])=>(
+          <div key={l} style={{background:W,borderRadius:13,padding:12,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{fontSize:22,marginBottom:4}}>{ic}</div>
+            <p style={{color:clr,fontWeight:900,fontSize:18,margin:"0 0 2px"}}>{v}</p>
+            <p style={{color:TXTS,fontSize:11,margin:0}}>{l}</p>
+          </div>
+        ))}
+      </div>
+      <h3 style={{color:TXT,fontWeight:800,marginBottom:10}}>🛵 Livraisons disponibles</h3>
+      {commandes.length===0?(
+        <div style={{textAlign:"center",padding:"40px 0",color:TXTS}}>
+          <div style={{fontSize:48}}>✅</div>
+          <p style={{fontWeight:600,marginTop:12}}>Aucune livraison disponible pour le moment</p>
+        </div>
+      ):commandes.map(c=>(
+        <div key={c.id} style={{background:W,borderRadius:13,padding:14,marginBottom:10,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+            <span style={{color:TXT,fontWeight:800}}>#{c.reference||c.id}</span>
+            <span style={{color:GD,fontWeight:700}}>{fmt(c.frais_livraison||500)}</span>
+          </div>
+          <p style={{color:TXTS,fontSize:12,margin:"0 0 8px"}}>📍 {c.adresse_livraison}</p>
+          <button style={{background:"#E65100",color:W,border:"none",borderRadius:9,padding:"10px 16px",fontWeight:700,cursor:"pointer",fontSize:13,width:"100%"}}>
+            🛵 Accepter cette livraison
+          </button>
+        </div>
+      ))}
+      <button onClick={()=>{setPage("accueil");setLivreurInfo(null);}} style={{width:"100%",background:"none",border:`1px solid #E0E8E3`,borderRadius:11,padding:12,color:TXTS,cursor:"pointer",fontSize:13,marginTop:10}}>
+        Se déconnecter
+      </button>
     </div>
   );
 }
@@ -1097,7 +1254,7 @@ export default function SantéExpress(){
         {mode==="tracking"&&curOrder&&<Tracking order={curOrder} onRate={()=>{setRateTarget(curOrder);setMode("rating");}}/>}
         {mode==="history"&&<History orders={orders} onOpen={o=>{setCurOrder(o);setMode("tracking");}} onRate={o=>{setRateTarget(o);setMode("rating");}}/>}
         {mode==="rating"&&rateTarget&&<Rating order={rateTarget} onDone={r=>{setOrders(prev=>prev.map(o=>o.id===rateTarget.id?{...o,rating:r}:o));setMode("history");}}/>}
-        {mode==="livreur"&&<Livreur orders={orders}/>}
+        {mode==="livreur"&&<Livreur/>}
         {mode==="admin"&&<Admin orders={orders} pharmacies={pharmaciesData}/>}
         {mode==="pharmacie"&&<Pharmacie/>}
         {!["livreur","admin","pharmacie"].includes(mode)&&<BottomNav mode={mode} setMode={setMode} count={count}/>}
