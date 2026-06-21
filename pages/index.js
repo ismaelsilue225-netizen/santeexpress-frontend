@@ -532,13 +532,24 @@ function Checkout({cart,subtotal,delivFee,form,setForm,onConfirm}){
                   if(!file)return;
                   set("ordonnanceUploading",true);
                   try{
-                    const fd=new FormData();
-                    fd.append("file",file);
-                    const r=await fetch("/api/upload-ordonnance",{method:"POST",body:fd});
-                    const d=await r.json();
-                    if(d.url)set("ordonnanceUrl",d.url);
-                  }catch{}
-                  set("ordonnanceUploading",false);
+                    const reader=new FileReader();
+                    reader.onload=async()=>{
+                      try{
+                        const base64=reader.result;
+                        const r=await fetch("/api/upload-ordonnance",{
+                          method:"POST",
+                          headers:{"Content-Type":"application/json"},
+                          body:JSON.stringify({file:base64,filename:file.name,contentType:file.type})
+                        });
+                        const d=await r.json();
+                        if(d.url)set("ordonnanceUrl",d.url);
+                      }catch{}
+                      set("ordonnanceUploading",false);
+                    };
+                    reader.readAsDataURL(file);
+                  }catch{
+                    set("ordonnanceUploading",false);
+                  }
                 }}/>
             </label>
           )}
