@@ -2,7 +2,9 @@ import { supabase } from '../../lib/supabase'
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: {
+      sizeLimit: '8mb',
+    },
   },
 }
 
@@ -10,47 +12,24 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
   try {
-    // Lire le fichier depuis le multipart/form-data
-    const chunks = []
-    for await (const chunk of req) chunks.push(chunk)
-    const buffer = Buffer.concat(chunks)
+    const { file, filename, contentType } = req.body
+    if (!file) return res.status(400).json({ error: 'No file provided' })
 
-    const contentType = req.headers['content-type'] || ''
-    const boundaryMatch = contentType.match(/boundary=(.+)$/)
-    if (!boundaryMatch) return res.status(400).json({ error: 'No boundary found' })
+    // file est une data URL: "data:image/jpeg;base64,/9j/4AAQ..."
+    const matches = file.match(/^data:(.+);base64,(.+)$/)
+    if (!matches) return res.status(400).json({ error: 'Invalid file format' })
 
-    const boundary = '--' + boundaryMatch[1]
-    const parts = buffer.toString('binary').split(boundary)
+    const mimeType = matches[1]
+    const base64Data = matches[2]
+    const buffer = Buffer.from(base64Data, 'base64')
 
-    let fileBuffer = null
-    let fileName = 'ordonnance.jpg'
-    let mimeType = 'image/jpeg'
-
-    for (const part of parts) {
-      if (part.includes('filename=')) {
-        const nameMatch = part.match(/filename="(.+?)"/)
-        const typeMatch = part.match(/Content-Type: (.+)/)
-        if (nameMatch) fileName = nameMatch[1]
-        if (typeMatch) mimeType = typeMatch[1].trim()
-
-        const headerEnd = part.indexOf('\r\n\r\n')
-        if (headerEnd === -1) continue
-        const dataStart = headerEnd + 4
-        const dataEnd = part.lastIndexOf('\r\n')
-        const binaryData = part.substring(dataStart, dataEnd)
-        fileBuffer = Buffer.from(binaryData, 'binary')
-      }
-    }
-
-    if (!fileBuffer) return res.status(400).json({ error: 'No file found' })
-
-    const ext = fileName.split('.').pop() || 'jpg'
+    const ext = (filename || 'photo.jpg').split('.').pop() || 'jpg'
     const uniqueName = `ordonnance_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`
 
     const { data, error } = await supabase.storage
       .from('ordonnances')
-      .upload(uniqueName, fileBuffer, {
-        contentType: mimeType,
+      .upload(uniqueName, buffer, {
+        contentType: contentType || mimeType,
         upsert: false,
       })
 
