@@ -87,6 +87,7 @@ export default async function handler(req, res) {
       statut: 'confirmed',
       statut_paiement: 'pending',
       note_pharmacien: body.note_pharmacien || null,
+      ordonnance_url: body.ordonnance_url || null,
     }
 
     const { data, error } = await supabase.from('commandes').insert([insertData]).select().single()
