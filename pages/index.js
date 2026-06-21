@@ -514,6 +514,35 @@ function Checkout({cart,subtotal,delivFee,form,setForm,onConfirm}){
           <textarea value={form.note||""} onChange={e=>set("note",e.target.value)} placeholder="Allergies, grossesse..." rows={2}
             style={{width:"100%",border:"2px solid #E0E8E3",borderRadius:10,padding:"11px 13px",fontSize:13,outline:"none",color:TXT,background:W,boxSizing:"border-box",resize:"none"}}/>
         </div>
+        <div>
+          <label style={{color:TXTS,fontSize:12,fontWeight:600,marginBottom:5,display:"block"}}>📷 Photo d'ordonnance <span style={{fontWeight:400}}>(optionnel — si besoin)</span></label>
+          {form.ordonnanceUrl?(
+            <div style={{position:"relative",borderRadius:10,overflow:"hidden",border:`2px solid ${G}`}}>
+              <img src={form.ordonnanceUrl} alt="Ordonnance" style={{width:"100%",maxHeight:160,objectFit:"cover",display:"block"}}/>
+              <button onClick={()=>{set("ordonnanceUrl",null);set("ordonnanceUploading",false);}}
+                style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.6)",color:W,border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:14}}>✕</button>
+            </div>
+          ):(
+            <label style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:6,border:`2px dashed ${form.ordonnanceUploading?G:"#E0E8E3"}`,borderRadius:10,padding:"18px 12px",cursor:"pointer",background:W}}>
+              <span style={{fontSize:24}}>{form.ordonnanceUploading?"⏳":"📷"}</span>
+              <span style={{color:TXTS,fontSize:12,fontWeight:600}}>{form.ordonnanceUploading?"Envoi en cours...":"Prendre une photo ou choisir un fichier"}</span>
+              <input type="file" accept="image/*" capture="environment" disabled={form.ordonnanceUploading} style={{display:"none"}}
+                onChange={async(e)=>{
+                  const file=e.target.files?.[0];
+                  if(!file)return;
+                  set("ordonnanceUploading",true);
+                  try{
+                    const fd=new FormData();
+                    fd.append("file",file);
+                    const r=await fetch("/api/upload-ordonnance",{method:"POST",body:fd});
+                    const d=await r.json();
+                    if(d.url)set("ordonnanceUrl",d.url);
+                  }catch{}
+                  set("ordonnanceUploading",false);
+                }}/>
+            </label>
+          )}
+        </div>
       </div>
       <div style={{background:W,borderRadius:13,padding:13,marginTop:16,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
         {cart.map(i=>(
@@ -1076,6 +1105,14 @@ function Pharmacie(){
               </div>
               <p style={{color:TXTS,fontSize:12,margin:"0 0 4px"}}>👤 {c.nom_client} · 📱 {c.telephone_client}</p>
               <p style={{color:TXTS,fontSize:12,margin:"0 0 10px"}}>📍 {c.adresse_livraison}</p>
+              {c.ordonnance_url&&(
+                <a href={c.ordonnance_url} target="_blank" rel="noreferrer" style={{display:"block",marginBottom:12}}>
+                  <div style={{position:"relative",borderRadius:9,overflow:"hidden",border:"2px solid #9B59B6"}}>
+                    <img src={c.ordonnance_url} alt="Ordonnance" style={{width:"100%",maxHeight:140,objectFit:"cover",display:"block"}}/>
+                    <span style={{position:"absolute",top:6,left:6,background:"rgba(155,89,182,0.9)",color:W,fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6}}>📷 Ordonnance — Cliquer pour agrandir</span>
+                  </div>
+                </a>
+              )}
               <div style={{background:BG,borderRadius:9,padding:10,marginBottom:12}}>
                 {(c.items||[]).map((item,i)=>(
                   <p key={i} style={{color:TXT,fontSize:12,margin:"0 0 3px"}}>• {item.nom_produit||item.name} ×{item.quantite||item.qty} — {fmt((item.prix_unitaire||item.price||0)*(item.quantite||item.qty||1))}</p>
@@ -1219,6 +1256,7 @@ export default function SantéExpress(){
       mode_paiement:form.payment,mode_livraison:form.delivMode,
       frais_livraison:delivFee,couverture_assurance:insAmt,
       sous_total:subtotal,note_pharmacien:form.note||null,
+      ordonnance_url:form.ordonnanceUrl||null,
     };
     let ref=`PC-${String(orders.length+4).padStart(4,"0")}`;
     try{
