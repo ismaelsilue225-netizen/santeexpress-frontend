@@ -1260,9 +1260,12 @@ export default function SantéExpress(){
   const placeOrder=async()=>{
     const insurer=ASSURANCES.find(a=>a.id===form.insurer);
     const insAmt=form.payment==="assurance"&&insurer?Math.round(subtotal*insurer.cover/100):0;
+    const ouvertes=pharmaciesData.filter(p=>p.est_ouvert);
+const pool=ouvertes.length?ouvertes:pharmaciesData;
+const assignedPharmacie=pool[Math.floor(Math.random()*pool.length)]||pharmaciesData[0];
     const body={
       items:cart.map(i=>({produit_id:i.id,nom_produit:i.nom||i.name,prix_unitaire:i.prix||i.price,quantite:i.qty})),
-      pharmacie_id:pharmaciesData[0]?.id||1,
+      pharmacie_id:assignedPharmacie?.id||1,
       adresse_livraison:form.address,telephone_client:form.phone,nom_client:form.name,
       mode_paiement:form.payment,mode_livraison:form.delivMode,
       frais_livraison:delivFee,couverture_assurance:insAmt,
@@ -1276,10 +1279,11 @@ export default function SantéExpress(){
       if(d?.commande?.reference)ref=d.commande.reference;
       if(d?.whatsapp_url){setTimeout(()=>window.open(d.whatsapp_url,"_blank"),2000);}
     }catch{}
-    const o={id:ref,date:new Date().toLocaleDateString("fr-FR"),items:[...cart],subtotal,delivFee,total:subtotal+delivFee-insAmt,status:"confirmed",pharmacy:(pharmaciesData[0]?.nom||"Pharmacie partenaire"),payment:form.payment,delivMode:form.delivMode,address:form.address,phone:form.phone,name:form.name,rating:null};
+    const o={id:ref,date:new Date().toLocaleDateString("fr-FR"),items:[...cart],subtotal,delivFee,total:subtotal+delivFee-insAmt,status:"confirmed",pharmacy:assignedPharmacie?.nom||"Pharmacie partenaire"),payment:form.payment,delivMode:form.delivMode,address:form.address,phone:form.phone,name:form.name,rating:null};
     setOrders(prev=>[o,...prev]);
     setCurOrder(o);
     setCart([]);
+    setForm(prev=>({...prev,note:"",insurer:"",insurerCard:""}));
     setSearching(true);
   };
 
