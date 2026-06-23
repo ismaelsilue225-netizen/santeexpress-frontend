@@ -1279,7 +1279,7 @@ const assignedPharmacie=pool[Math.floor(Math.random()*pool.length)]||pharmaciesD
       if(d?.commande?.reference)ref=d.commande.reference;
       if(d?.whatsapp_url){setTimeout(()=>window.open(d.whatsapp_url,"_blank"),2000);}
     }catch{}
-    const o={id:ref,date:new Date().toLocaleDateString("fr-FR"),items:[...cart],subtotal,delivFee,total:subtotal+delivFee-insAmt,status:"confirmed",pharmacy:assignedPharmacie?.nom||"Pharmacie partenaire"),payment:form.payment,delivMode:form.delivMode,address:form.address,phone:form.phone,name:form.name,rating:null};
+    const o={id:ref,date:new Date().toLocaleDateString("fr-FR"),items:[...cart],subtotal,delivFee,total:subtotal+delivFee-insAmt,status:"confirmed",pharmacy:assignedPharmacie?.nom||"Pharmacie partenaire",payment:form.payment,delivMode:form.delivMode,address:form.address,phone:form.phone,name:form.name,rating:null};
     setOrders(prev=>[o,...prev]);
     setCurOrder(o);
     setCart([]);
