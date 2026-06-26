@@ -1260,7 +1260,9 @@ export default function SantéExpress(){
   const placeOrder=async()=>{
     const insurer=ASSURANCES.find(a=>a.id===form.insurer);
     const insAmt=form.payment==="assurance"&&insurer?Math.round(subtotal*insurer.cover/100):0;
-    const ouvertes=pharmaciesData.filter(p=>p.est_ouvert);
+    const adresseLower=(form.address||"").toLowerCase();
+const memeCommune=pharmaciesData.filter(p=>p.est_ouvert&&adresseLower.includes((p.district||"").toLowerCase()));
+const ouvertes=memeCommune.length?memeCommune:pharmaciesData.filter(p=>p.est_ouvert);
 const pool=ouvertes.length?ouvertes:pharmaciesData;
 const assignedPharmacie=pool[Math.floor(Math.random()*pool.length)]||pharmaciesData[0];
     const body={
